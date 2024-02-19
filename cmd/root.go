@@ -1,26 +1,28 @@
 package cmd
 
 import (
+	"bufio"
+	"context"
+	"encoding/json"
 	"fmt"
 	"os"
-	"path"
-	"strconv"
+	"path/filepath"
+	"runtime"
 	"strings"
+	"time"
 
-	"github.com/gildas/go-core"
 	"github.com/gildas/go-logger"
-	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-// Options caries options for this application
-type Options struct {
+// CmdOptions contains the global options
+var CmdOptions struct {
 	ConfigFile     string
 	LogDestination string
-	Input          string
 	LogLevel       string
 	Filter         string
+	Output         string
 	LocalTime      bool
 	UseColors      bool
 	UsePager       bool
@@ -29,37 +31,30 @@ type Options struct {
 	Debug          bool
 }
 
-// CmdOptions contains the global options
-var CmdOptions Options
+// RootCmd represents the base command when called without any subcommands
+var RootCmd = &cobra.Command{
+	Short: "pretty-print Bunyan logs from stdin or file(s)",
+	Long:  "Bunyan is a simple and fast JSON log viewer. It reads log entries from given files or stdin and pretty-prints them to stdout.",
+	RunE:  runRootCommand,
+}
 
-// Log is the main logger
-var Log *logger.Logger
-
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
-	Use:     APP,
-	Short:   "Log viewer for Bunyan format",
-	Version: Version(),
-	Run:     runRootCommand,
+// Execute run the command
+func Execute(context context.Context) error {
+	return RootCmd.ExecuteContext(context)
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
+	configDir, err := os.UserConfigDir()
+	cobra.CheckErr(err)
 
-	if home := core.GetEnvAsString("XDG_CONFIG_HOME", ""); len(home) > 0 {
-		rootCmd.PersistentFlags().StringVarP(&CmdOptions.ConfigFile, "config", "c", "", fmt.Sprintf("config file (default is %s/um-cli/config)", home))
-	} else {
-		rootCmd.PersistentFlags().StringVarP(&CmdOptions.ConfigFile, "config", "c", "", "config file (default is $HOME/.um-cli)")
-	}
-	rootCmd.PersistentFlags().StringVar(&CmdOptions.Input, "input", "i", "stdin", "read the log from the given file. If absent or file is \"-\", stdin is read.")
-	rootCmd.PersistentFlags().StringVar(&CmdOptions.LogLevel, "level", "l", "INFO", "Only shows log entries with a level at or above the given value.")
-	rootCmd.PersistentFlags().StringVar(&CmdOptions.Filter, "filter", "f", "", "Run each log message through the filter.")
-	rootCmd.PersistentFlags().BoolVar(&CmdOptions.Strict, "strict", "", false, "Suppress all but legal Bunyan JSON log lines. By default non-JSON, and non-Bunyan lines are passed through.")
-	rootCmd.PersistentFlags().BoolVar(&CmdOptions.UsePager, "pager", "", false, "Pipe output into `less` (or $PAGER if set), if stdout is a TTY. This overrides $BUNYAN_NO_PAGER.")
-	rootCmd.PersistentFlags().BoolVar(&CmdOptions.UseColors, "color", "", true, "Colorize output. Defaults to try if output stream is a TTY.")
-	rootCmd.PersistentFlags().BoolVar(&CmdOptions.UseColors, "no-color", "", false, "Force no coloring.")
-	rootCmd.PersistentFlags().StringVar(&CmdOptions.Output, "output", "o", "long", "")
-	rootCmd.PersistentFlags().StringVar(&CmdOptions.Output, "output", "o", "long", "")
+	RootCmd.PersistentFlags().StringVarP(&CmdOptions.ConfigFile, "config", "c", "", fmt.Sprintf("config file (default is %s)", filepath.Join(configDir, "bunyan", "config.yaml")))
+	RootCmd.PersistentFlags().StringVar(&CmdOptions.LogLevel, "level", "INFO", "Only shows log entries with a level at or above the given value.")
+	RootCmd.PersistentFlags().StringVarP(&CmdOptions.Filter, "filter", "f", "", "Run each log message through the filter.")
+	RootCmd.PersistentFlags().BoolVar(&CmdOptions.Strict, "strict", false, "Suppress all but legal Bunyan JSON log lines. By default non-JSON, and non-Bunyan lines are passed through.")
+	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UsePager, "pager", false, "Pipe output into `less` (or $PAGER if set), if stdout is a TTY. This overrides $BUNYAN_NO_PAGER.")
+	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UseColors, "color", true, "Colorize output. Defaults to try if output stream is a TTY.")
+	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UseColors, "no-color", false, "Force no coloring.")
+	RootCmd.PersistentFlags().StringVarP(&CmdOptions.Output, "output", "o", "long", "output mode/format. One of long, json, json-N, bunyan, inspect, short, simple, html, serve, server")
 
 	// LogLevel should also support: https://github.com/gildas/go-logger#setting-the-filterlevel
 
@@ -100,84 +95,154 @@ func init() {
 		   p('  BUNYAN_NO_PAGER    Disable piping output to a pager. ');
 		   p('                     See "--no-pager".');
 	*/
-	rootCmd.PersistentFlags().StringVar(&CmdOptions.LogDestination, "log", "", "where logs are writen if given (by default, no log is generated)")
-	rootCmd.PersistentFlags().BoolVar(&CmdOptions.Debug, "debug", false, "forces logging at DEBUG level")
-	rootCmd.PersistentFlags().BoolVarP(&CmdOptions.Verbose, "verbose", "v", false, "runs verbosely if set")
-}
+	RootCmd.PersistentFlags().StringVar(&CmdOptions.LogDestination, "log", "", "where logs are writen if given (by default, no log is generated)")
+	RootCmd.PersistentFlags().BoolVar(&CmdOptions.Debug, "debug", false, "forces logging at DEBUG level")
+	RootCmd.PersistentFlags().BoolVarP(&CmdOptions.Verbose, "verbose", "v", false, "runs verbosely if set")
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-func Execute() {
-	cobra.CheckErr(rootCmd.Execute())
-	if Log != nil {
-		Log.Flush()
-	}
+	RootCmd.SilenceUsage = true
+	cobra.OnInitialize(initConfig)
 }
 
 // initConfig reads config files and environment variable
 func initConfig() {
-	home, err := homedir.Dir()
-	cobra.CheckErr(err)
+	log := logger.Must(logger.FromContext(RootCmd.Context()))
 
-	_ = viper.BindPFlag("DEBUG", rootCmd.Flags().Lookup("debug"))
-	_ = viper.BindPFlag("VERBOSE", rootCmd.Flags().Lookup("verbose"))
-	_ = viper.BindPFlag("LOG_DESTINATION", rootCmd.Flags().Lookup("log"))
+	if len(CmdOptions.LogDestination) > 0 {
+		log.ResetDestinations(CmdOptions.LogDestination)
+	}
+	if CmdOptions.Debug {
+		log.SetFilterLevel(logger.DEBUG)
+	}
 
+	log.Infof(strings.Repeat("-", 80))
+	log.Infof("Starting %s v%s (%s)", RootCmd.Name(), RootCmd.Version, runtime.GOARCH)
+	log.Infof("Log Destination: %s", log)
+
+	viper.SetConfigType("yaml")
 	if len(CmdOptions.ConfigFile) > 0 { // Use config file from the flag.
 		viper.SetConfigFile(CmdOptions.ConfigFile)
-	} else if xdg := core.GetEnvAsString("XDG_CONFIG_HOME", ""); len(xdg) > 0 {
-		viper.AddConfigPath(path.Join(xdg, APP))
-		viper.SetConfigName("config")
-	} else {
-		viper.AddConfigPath(path.Join(home, ".config", APP))
-		viper.SetConfigName("config")
+	} else if configDir, _ := os.UserConfigDir(); len(configDir) > 0 {
+		viper.AddConfigPath(filepath.Join(configDir, "bunyan"))
+		viper.SetConfigName("config.yaml")
+	} else { // Old fashion way
+		homeDir, err := os.UserHomeDir()
+		cobra.CheckErr(err)
+		viper.AddConfigPath(homeDir)
+		viper.SetConfigName(".bunyan")
 	}
-	viper.SetConfigType("yaml")
 
 	viper.AutomaticEnv() // read in environment variables that match
 
-	err = viper.ReadInConfig()
-	if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-		viper.AddConfigPath(home)
-		viper.AddConfigPath(".")
-		viper.SetConfigName(".um-cli")
-		err = viper.ReadInConfig()
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			viper.SetConfigName(".gum-cli")
-			if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-				viper.SetConfigType("dotenv")
-				viper.SetConfigName(".env")
-				err = viper.ReadInConfig()
-				if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-					err = nil // It's ok if the config file does not exist
-				}
-			}
-		}
-	}
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+	err := viper.ReadInConfig()
+	if verr, ok := err.(viper.ConfigFileNotFoundError); ok {
+		log.Warnf("Config file not found: %s", verr)
+	} else if err != nil {
+		log.Fatalf("Failed to read config file: %s", err)
+		fmt.Fprintf(os.Stderr, "Failed to read config file: %s\n", err)
 		os.Exit(1)
-	}
-
-	os.Setenv("DEBUG", strconv.FormatBool(viper.GetBool("DEBUG")))
-	os.Setenv("LOG_DESTINATION", viper.GetString("LOG_DESTINATION"))
-	if len(viper.GetString("LOG_DESTINATION")) == 0 {
-		if viper.GetBool("DEBUG") {
-			Log = logger.Create(APP, APP+".log")
-		} else {
-			Log = logger.Create(APP, &logger.NilStream{})
-		}
 	} else {
-		Log = logger.Create(APP)
+		log.Infof("Config File: %s", viper.ConfigFileUsed())
 	}
-
-	Log.Infof(strings.Repeat("-", 80))
-	Log.Infof("Starting %s version %s", APP, Version())
-	Log.Infof("Configuration file: %s", viper.ConfigFileUsed())
-	Log.Infof("Log Destination: %s", Log)
-	Log.Infof("Verbose: %t", viper.GetBool("VERBOSE"))
 }
 
 // runRootCommand executes the Root Command
-func runRootCommand(cmd *cobra.Command, args []string) {
-	Log.Record("options", CmdOptions).Debugf("Option Flags")
+func runRootCommand(cmd *cobra.Command, args []string) error {
+	// Here we should read from stdin or from the files
+	// and pretty print the logs
+	log := logger.Must(logger.FromContext(cmd.Context()))
+	var scanner *bufio.Scanner
+
+	if len(args) == 0 {
+		scanner = bufio.NewScanner(os.Stdin)
+	} else {
+		file, err := os.Open(args[0])
+		if err != nil {
+			log.Fatalf("Failed to open file %s: %s", args[0], err)
+			return err
+		}
+		defer file.Close()
+		scanner = bufio.NewScanner(file)
+	}
+
+	for scanner.Scan() {
+		log.Infof(scanner.Text())
+		var common struct {
+			Time     time.Time `json:"time"`
+			Level    int       `json:"level"`
+			Hostname string    `json:"hostname"`
+			Name     string    `json:"name"`
+			PID      int       `json:"pid"`
+			Message  string    `json:"msg"`
+		}
+		var entries map[string]interface{}
+		output := strings.Builder{}
+		line := scanner.Bytes()
+		if err := json.Unmarshal(line, &common); err != nil {
+			log.Errorf("Failed to parse JSON: %s", err)
+			fmt.Println(string(line))
+			continue
+		}
+		if err := json.Unmarshal(line, &entries); err != nil {
+			log.Errorf("Failed to parse JSON: %s", err)
+			fmt.Println(string(line))
+			continue
+		}
+
+		output.WriteString("[")
+		output.WriteString(common.Time.Format("2006-01-02T15:04:05.000Z07:00"))
+		output.WriteString("] ")
+		output.WriteString(LevelColors[common.Level]) // Be sure to supprot levels not in the map
+		output.WriteString(logger.Level(common.Level).String())
+		output.WriteString(Reset)
+		output.WriteString(": ")
+		output.WriteString(common.Name)
+		output.WriteString("/")
+		output.WriteString(fmt.Sprintf("%d", common.PID))
+		output.WriteString(" on ")
+		output.WriteString(common.Hostname)
+		output.WriteString(": ")
+		output.WriteString(Cyan)
+		output.WriteString(common.Message)
+		output.WriteString(Reset)
+
+		delete(entries, "time")
+		delete(entries, "level")
+		delete(entries, "hostname")
+		delete(entries, "pid")
+		delete(entries, "name")
+		delete(entries, "msg")
+		delete(entries, "v")
+
+		output.WriteString("(")
+		for key, field := range entries {
+			if value, ok := field.(string); ok {
+				output.WriteString(key)
+				output.WriteString("=")
+				output.WriteString(value)
+			} else if value, ok := field.(int); ok {
+				output.WriteString(key)
+				output.WriteString("=")
+				output.WriteString(fmt.Sprintf("%d", value))
+			} else if stringer, ok := field.(fmt.Stringer); ok {
+				output.WriteString(key)
+				output.WriteString("=")
+				output.WriteString(stringer.String())
+			} else {
+				output.WriteString(key)
+				output.WriteString("=")
+				output.WriteString(fmt.Sprintf("%v", field))
+			}
+			output.WriteString(", ")
+		}
+		output.WriteString(")")
+
+		// If some keys are left print them one by one with \n
+
+		fmt.Println(output.String())
+	}
+	if err := scanner.Err(); err != nil {
+		log.Fatalf("Failed to read from input", err)
+		return err
+	}
+	return nil
 }

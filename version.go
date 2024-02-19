@@ -1,8 +1,8 @@
-package cmd
+package main
 
 import "strings"
 
-// commit contains the current git commit and is set in the build.sh script
+// commit contains the current git commit this code was built on and should be set via -ldflags
 var commit string
 
 // branch contains the git branch this code was built on and should be set via -ldflags
@@ -12,12 +12,10 @@ var branch string
 var stamp string
 
 // VERSION is the version of this application
-var VERSION = "1.0.12"
+var VERSION = "0.0.0"
 
-const (
-	// APP is the name of the application
-	APP = "bunyan"
-)
+// APP is the name of the application
+const APP = "bunyan"
 
 // Version gets the current version of the application
 func Version() string {
