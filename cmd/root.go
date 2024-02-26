@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/gildas/go-flags"
 	"github.com/gildas/go-logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -18,6 +19,7 @@ import (
 type OutputOptions struct {
 	LogLevel  string
 	Filter    string
+	Output    *flags.EnumFlag
 	LocalTime bool
 	UseColors bool
 }
@@ -27,7 +29,6 @@ var CmdOptions struct {
 	OutputOptions
 	ConfigFile     string
 	LogDestination string
-	Output         string
 	UsePager       bool
 	Strict         bool
 	Verbose        bool
@@ -50,14 +51,16 @@ func init() {
 	configDir, err := os.UserConfigDir()
 	cobra.CheckErr(err)
 
+	CmdOptions.Output = flags.NewEnumFlag("+long", "json", "json-N", "bunyan", "inspect", "short", "simple", "html", "serve", "server")
 	RootCmd.PersistentFlags().StringVarP(&CmdOptions.ConfigFile, "config", "c", "", fmt.Sprintf("config file (default is %s)", filepath.Join(configDir, "bunyan", "config.yaml")))
 	RootCmd.PersistentFlags().StringVar(&CmdOptions.LogLevel, "level", "INFO", "Only shows log entries with a level at or above the given value.")
 	RootCmd.PersistentFlags().StringVarP(&CmdOptions.Filter, "filter", "f", "", "Run each log message through the filter.")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.Strict, "strict", false, "Suppress all but legal Bunyan JSON log lines. By default non-JSON, and non-Bunyan lines are passed through.")
+	RootCmd.PersistentFlags().BoolVarP(&CmdOptions.LocalTime, "local", "L", false, "Display time field in local time, rather than UTC.")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UsePager, "pager", false, "Pipe output into `less` (or $PAGER if set), if stdout is a TTY. This overrides $BUNYAN_NO_PAGER.")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UseColors, "color", true, "Colorize output. Defaults to try if output stream is a TTY.")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UseColors, "no-color", true, "Force no coloring.")
-	RootCmd.PersistentFlags().StringVarP(&CmdOptions.Output, "output", "o", "long", "output mode/format. One of long, json, json-N, bunyan, inspect, short, simple, html, serve, server")
+	RootCmd.PersistentFlags().VarP(CmdOptions.Output, "output", "o", "output mode/format. One of long, json, json-N, bunyan, inspect, short, simple, html, serve, server")
 
 	// LogLevel should also support: https://github.com/gildas/go-logger#setting-the-filterlevel
 
@@ -101,6 +104,7 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&CmdOptions.LogDestination, "log", "", "where logs are writen if given (by default, no log is generated)")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.Debug, "debug", false, "forces logging at DEBUG level")
 	RootCmd.PersistentFlags().BoolVarP(&CmdOptions.Verbose, "verbose", "v", false, "runs verbosely if set")
+	_ = RootCmd.RegisterFlagCompletionFunc("output", CmdOptions.Output.CompletionFunc("output"))
 
 	RootCmd.SilenceUsage = true
 	cobra.OnInitialize(initConfig)

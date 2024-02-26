@@ -28,23 +28,40 @@ type LogEntry struct {
 
 func (entry LogEntry) Write(context context.Context, output io.Writer, options *OutputOptions) {
 	log := logger.Must(logger.FromContext(context))
-
-	_, _ = output.Write([]byte("["))
-	entry.writeString(output, options, "[")
+	when := entry.Time.UTC()
 	if options.LocalTime {
-		entry.writeString(output, options, entry.Time.Local().Format("2006-01-02T15:04:05.000"))
-	} else {
-		entry.writeString(output, options, entry.Time.UTC().Format("2006-01-02T15:04:05.000"))
+		when = entry.Time.Local()
 	}
-	entry.writeString(output, options, "] ")
-	entry.Level.Write(output, options)
-	entry.writeString(output, options, ": ")
-	entry.writeString(output, options, entry.Name)
-	entry.writeString(output, options, "/")
-	entry.writeInt64(output, options, entry.PID)
-	entry.writeString(output, options, " on ")
-	entry.writeString(output, options, entry.Hostname)
-	entry.writeString(output, options, ": ")
+
+	if options.Output.Value == "short" {
+		whenFormat := "15:04:05.000Z"
+		if options.LocalTime {
+			whenFormat = "15:04:05.000"
+		}
+		entry.writeString(output, options, when.Format(whenFormat))
+		entry.writeString(output, options, " ")
+		entry.Level.Write(output, options)
+		entry.writeString(output, options, " ")
+		entry.writeString(output, options, entry.Name)
+		entry.writeString(output, options, ": ")
+	} else {
+		whenFormat := "2006-01-02T15:04:05.000"
+		if options.LocalTime {
+			whenFormat = "2006-01-02T15:04:05.000Z07:00"
+		}
+		entry.writeString(output, options, "[")
+		entry.writeString(output, options, when.Format(whenFormat))
+		entry.writeString(output, options, "] ")
+		entry.Level.Write(output, options)
+		entry.writeString(output, options, ": ")
+		entry.writeString(output, options, entry.Name)
+		entry.writeString(output, options, "/")
+		entry.writeInt64(output, options, entry.PID)
+		entry.writeString(output, options, " on ")
+		entry.writeString(output, options, entry.Hostname)
+		entry.writeString(output, options, ": ")
+	}
+
 	if len(entry.Topic) > 0 {
 		entry.writeStringWithColor(output, options, entry.Topic, Green)
 		if len(entry.Scope) > 0 {
