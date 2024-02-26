@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/gildas/go-flags"
 	"github.com/gildas/go-logger"
@@ -20,7 +21,7 @@ type OutputOptions struct {
 	LogLevel  string
 	Filter    string
 	Output    *flags.EnumFlag
-	LocalTime bool
+	Location  *time.Location
 	UseColors bool
 }
 
@@ -29,6 +30,8 @@ var CmdOptions struct {
 	OutputOptions
 	ConfigFile     string
 	LogDestination string
+	LocalTime      bool
+	Timezone       string
 	UsePager       bool
 	Strict         bool
 	Verbose        bool
@@ -51,12 +54,13 @@ func init() {
 	configDir, err := os.UserConfigDir()
 	cobra.CheckErr(err)
 
-	CmdOptions.Output = flags.NewEnumFlag("+long", "json", "json-N", "bunyan", "inspect", "short", "simple", "html", "serve", "server")
+	CmdOptions.Output = flags.NewEnumFlag("+long", "bunyan", "short", "simple", "html", "serve", "server")
 	RootCmd.PersistentFlags().StringVarP(&CmdOptions.ConfigFile, "config", "c", "", fmt.Sprintf("config file (default is %s)", filepath.Join(configDir, "bunyan", "config.yaml")))
 	RootCmd.PersistentFlags().StringVar(&CmdOptions.LogLevel, "level", "", "Only shows log entries with a level at or above the given value.")
 	RootCmd.PersistentFlags().StringVarP(&CmdOptions.Filter, "filter", "f", "", "Run each log message through the filter.")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.Strict, "strict", false, "Suppress all but legal Bunyan JSON log lines. By default non-JSON, and non-Bunyan lines are passed through.")
 	RootCmd.PersistentFlags().BoolVarP(&CmdOptions.LocalTime, "local", "L", false, "Display time field in local time, rather than UTC.")
+	RootCmd.PersistentFlags().StringVar(&CmdOptions.Timezone, "time", "", "Display time field in the given timezone.")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UsePager, "pager", false, "Pipe output into `less` (or $PAGER if set), if stdout is a TTY. This overrides $BUNYAN_NO_PAGER.")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UseColors, "no-color", false, "Force no coloring.")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UseColors, "color", true, "Colorize output. Defaults to try if output stream is a TTY.")
@@ -66,40 +70,24 @@ func init() {
 
 	// --strict suppresses all but legal Bunyan log entries. By default, non-Bunyan entries are passed through.
 	/*
-		   p('  -c, --condition CONDITION');
-		   p('                Run each log message through the condition and');
-		   p('                only show those that return truish. E.g.:');
-		   p('                    -c \'this.pid == 123\'');
-		   p('                    -c \'this.level == DEBUG\'');
-		   p('                    -c \'this.msg.indexOf("boom") != -1\'');
-		   p('                "CONDITION" must be legal JS code. `this` holds');
-		   p('                the log record. The TRACE, DEBUG, ... FATAL values');
-		   p('                are defined to help with comparing `this.level`.');
-		   How about some Go Template?
-		   p('Output options:');
-		   p('  --no-pager    Do not pipe output into a pager.');
-		   p('  --no-color    Force no coloring (e.g. terminal doesn\'t support it)');
-		   p('  -o, --output MODE');
-		   p('                Specify an output mode/format. One of');
-		   p('                  long: (the default) pretty');
-		   p('                  json: JSON output, 2-space indent');
-		   p('                  json-N: JSON output, N-space indent, e.g. "json-4"');
-		   p('                  bunyan: 0 indented JSON, bunyan\'s native format');
-		   p('                  inspect: node.js `util.inspect` output');
-		   p('                  short: like "long", but more concise');
-		   p('                  simple: level, followed by "-" and then the message');
-		                        html: generate an html page
-								serve, server: starts a web server to give the html page. Should be dynamic, etc.
-		   p('  -j            shortcut for `-o json`');
-		   p('  -0            shortcut for `-o bunyan`');
-		   p('  -L, --time local');
-		   p('                Display time field in local time, rather than UTC.');
-		   p('');
-		   p('Environment Variables:');
-		   p('  BUNYAN_NO_COLOR    Set to a non-empty value to force no output ');
-		   p('                     coloring. See "--no-color".');
-		   p('  BUNYAN_NO_PAGER    Disable piping output to a pager. ');
-		   p('                     See "--no-pager".');
+	   p('  -c, --condition CONDITION');
+	   p('                Run each log message through the condition and');
+	   p('                only show those that return truish. E.g.:');
+	   p('                    -c \'this.pid == 123\'');
+	   p('                    -c \'this.level == DEBUG\'');
+	   p('                    -c \'this.msg.indexOf("boom") != -1\'');
+	   p('                "CONDITION" must be legal JS code. `this` holds');
+	   p('                the log record. The TRACE, DEBUG, ... FATAL values');
+	   p('                are defined to help with comparing `this.level`.');
+	   How about some Go Template?
+	   p('Output options:');
+	   p('  --no-pager    Do not pipe output into a pager.');
+	   p('');
+	   p('Environment Variables:');
+	   p('  BUNYAN_NO_COLOR    Set to a non-empty value to force no output ');
+	   p('                     coloring. See "--no-color".');
+	   p('  BUNYAN_NO_PAGER    Disable piping output to a pager. ');
+	   p('                     See "--no-pager".');
 	*/
 	RootCmd.PersistentFlags().StringVar(&CmdOptions.LogDestination, "log", "", "where logs are writen if given (by default, no log is generated)")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.Debug, "debug", false, "forces logging at DEBUG level")
@@ -153,15 +141,20 @@ func initConfig() {
 }
 
 // runRootCommand executes the Root Command
-func runRootCommand(cmd *cobra.Command, args []string) error {
+func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 	// Here we should read from stdin or from the files
-	// and pretty print the logs
 	log := logger.Must(logger.FromContext(cmd.Context()))
 	var scanner *bufio.Scanner
-	var filter  LogFilter = AllLogFilter{}
+	var filter LogFilter = AllLogFilter{}
 
 	if cmd.Flags().Changed("no-color") {
 		CmdOptions.UseColors = false
+	}
+	if CmdOptions.LocalTime {
+		CmdOptions.Location = time.Local
+	} else if CmdOptions.Location, err = ParseLocation(CmdOptions.Timezone); err != nil {
+		log.Fatalf("Failed to load timezone %s: %s", CmdOptions.Timezone, err)
+		return err
 	}
 
 	if len(CmdOptions.LogLevel) > 0 {
