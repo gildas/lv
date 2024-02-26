@@ -3,11 +3,13 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"strconv"
 	"time"
 
 	"github.com/gildas/go-errors"
+	"github.com/gildas/go-logger"
 )
 
 type LogEntry struct {
@@ -21,9 +23,12 @@ type LogEntry struct {
 	Scope    string    `json:"scope"`
 	Message  string    `json:"msg"`
 	Fields   map[string]any
+	Blobs    map[string]any
 }
 
 func (entry LogEntry) Write(context context.Context, output io.Writer, options *OutputOptions) {
+	log := logger.Must(logger.FromContext(context))
+
 	_, _ = output.Write([]byte("["))
 	entry.writeString(output, options, "[")
 	if options.LocalTime {
@@ -36,7 +41,7 @@ func (entry LogEntry) Write(context context.Context, output io.Writer, options *
 	entry.writeString(output, options, ": ")
 	entry.writeString(output, options, entry.Name)
 	entry.writeString(output, options, "/")
-	entry.writeInt64(output, options, entry.TaskID)
+	entry.writeInt64(output, options, entry.PID)
 	entry.writeString(output, options, " on ")
 	entry.writeString(output, options, entry.Hostname)
 	entry.writeString(output, options, ": ")
@@ -49,6 +54,50 @@ func (entry LogEntry) Write(context context.Context, output io.Writer, options *
 		entry.writeString(output, options, " ")
 	}
 	entry.writeStringWithColor(output, options, entry.Message, Cyan)
+
+	log.Debugf("Fields: %v", entry.Fields)
+	if len(entry.Fields) > 0 {
+		entry.writeString(output, options, " (")
+		index := 0
+		for key, field := range entry.Fields {
+			if value, ok := field.(string); ok {
+				if index > 0 {
+					entry.writeString(output, options, ", ")
+				}
+				entry.writeString(output, options, key)
+				entry.writeString(output, options, "=")
+				entry.writeString(output, options, value)
+			} else if value, ok := field.(float64); ok {
+				if index > 0 {
+					entry.writeString(output, options, ", ")
+				}
+				entry.writeString(output, options, key)
+				entry.writeString(output, options, "=")
+				entry.writeString(output, options, strconv.FormatFloat(value, 'g', -1, 64))
+			} else {
+				log.Debugf("key %s is of type %T", key, field)
+			}
+			index++
+		}
+		if index > 0 {
+			entry.writeString(output, options, ", ")
+		}
+		entry.writeString(output, options, "tid=")
+		entry.writeInt64(output, options, entry.TaskID)
+		entry.writeString(output, options, ")")
+	}
+
+	log.Debugf("Blobs: %v", entry.Blobs)
+	if len(entry.Blobs) > 0 {
+		entry.writeString(output, options, "\n")
+		for key, field := range entry.Blobs {
+			entry.writeString(output, options, "    ")
+			entry.writeString(output, options, key)
+			entry.writeString(output, options, ": ")
+			entry.writeBlob(output, options, field, 4)
+			entry.writeString(output, options, "\n")
+		}
+	}
 }
 
 func (entry LogEntry) writeString(output io.Writer, options *OutputOptions, value string) {
@@ -69,6 +118,60 @@ func (entry LogEntry) writeStringWithColor(output io.Writer, options *OutputOpti
 	}
 }
 
+func (entry LogEntry) writeBlob(output io.Writer, options *OutputOptions, blob any, indent int) {
+	if value, ok := blob.(string); ok {
+		entry.writeString(output, options, "\"")
+		entry.writeString(output, options, value)
+		entry.writeString(output, options, "\"")
+	} else if value, ok := blob.(float64); ok {
+		entry.writeString(output, options, strconv.FormatFloat(value, 'g', -1, 64))
+	} else if value, ok := blob.(bool); ok {
+		if value {
+			entry.writeString(output, options, "true")
+		} else {
+			entry.writeString(output, options, "false")
+		}
+	} else if values, ok := blob.([]any); ok {
+		entry.writeString(output, options, "[\n")
+		entry.writeIndent(output, options, indent)
+		for index, value := range values {
+			if index > 0 {
+				entry.writeString(output, options, ", \n")
+				entry.writeIndent(output, options, indent)
+			}
+			entry.writeString(output, options, ", \n")
+			entry.writeBlob(output, options, value, indent+2)
+		}
+		entry.writeString(output, options, "]")
+	} else if values, ok := blob.(map[string]any); ok {
+		entry.writeString(output, options, "{\n")
+		index := 0
+		for key, value := range values {
+			entry.writeIndent(output, options, indent+2)
+			entry.writeString(output, options, "\"")
+			entry.writeString(output, options, key)
+			entry.writeString(output, options, "\": ")
+			entry.writeBlob(output, options, value, indent+2)
+			if index < len(values)-1 {
+				entry.writeString(output, options, ",\n")
+			} else {
+				entry.writeString(output, options, "\n")
+			}
+			index++
+		}
+		entry.writeIndent(output, options, indent-2)
+		entry.writeString(output, options, "}")
+	} else {
+		entry.writeString(output, options, "!!!"+fmt.Sprintf("%v", blob))
+	}
+}
+
+func (entry LogEntry) writeIndent(output io.Writer, options *OutputOptions, indent int) {
+	for i := 0; i < indent; i++ {
+		_, _ = output.Write([]byte(" "))
+	}
+}
+
 // UnmarshalJSON unmarshal data into this
 func (entry *LogEntry) UnmarshalJSON(payload []byte) (err error) {
 	var data map[string]any
@@ -79,6 +182,7 @@ func (entry *LogEntry) UnmarshalJSON(payload []byte) (err error) {
 		return err
 	}
 	entry.Fields = map[string]any{}
+	entry.Blobs = map[string]any{}
 	for key, value := range data {
 		switch key {
 		case "hostname":
@@ -86,7 +190,7 @@ func (entry *LogEntry) UnmarshalJSON(payload []byte) (err error) {
 				merr.Append(errors.ArgumentInvalid.With("hostname", value))
 			}
 		case "name":
-			if entry.Hostname, ok = value.(string); !ok {
+			if entry.Name, ok = value.(string); !ok {
 				merr.Append(errors.ArgumentInvalid.With("name", value))
 			}
 		case "topic":
@@ -102,28 +206,22 @@ func (entry *LogEntry) UnmarshalJSON(payload []byte) (err error) {
 				merr.Append(errors.ArgumentInvalid.With("msg", value))
 			}
 		case "level":
-			if svalue, ok := value.(string); !ok {
+			if number, ok := value.(float64); !ok {
 				merr.Append(errors.ArgumentInvalid.With("level", value))
-			} else if ivalue, err := strconv.ParseInt(svalue, 10, 64); err != nil {
-				merr.Append(errors.Join(errors.ArgumentInvalid.With("level", value), err))
 			} else {
-				entry.Level = LogLevel(ivalue)
+				entry.Level = LogLevel(int(number))
 			}
 		case "pid":
-			if svalue, ok := value.(string); !ok {
-				merr.Append(errors.ArgumentInvalid.With("level", value))
-			} else if ivalue, err := strconv.ParseInt(svalue, 10, 64); err != nil {
-				merr.Append(errors.Join(errors.ArgumentInvalid.With("pid", value), err))
+			if number, ok := value.(float64); !ok {
+				merr.Append(errors.ArgumentInvalid.With("pid", value))
 			} else {
-				entry.PID = ivalue
+				entry.PID = int64(number)
 			}
 		case "tid":
-			if svalue, ok := value.(string); !ok {
-				merr.Append(errors.ArgumentInvalid.With("level", value))
-			} else if ivalue, err := strconv.ParseInt(svalue, 10, 64); err != nil {
-				merr.Append(errors.Join(errors.ArgumentInvalid.With("level", value), err))
+			if number, ok := value.(float64); !ok {
+				merr.Append(errors.ArgumentInvalid.With("tid", value))
 			} else {
-				entry.TaskID = ivalue
+				entry.TaskID = int64(number)
 			}
 		case "time":
 			if tvalue, ok := value.(string); !ok {
@@ -131,11 +229,17 @@ func (entry *LogEntry) UnmarshalJSON(payload []byte) (err error) {
 			} else if entry.Time, err = time.Parse(time.RFC3339, tvalue); err != nil {
 				merr.Append(errors.Join(errors.ArgumentInvalid.With("time", value), err))
 			}
-		case "v":
+		case "severity", "v":
 			// ignore
 		default:
-			entry.Fields[key] = value
+			if _, ok := value.(string); ok {
+				entry.Fields[key] = value
+			} else if _, ok := value.(float64); ok {
+				entry.Fields[key] = value
+			} else {
+				entry.Blobs[key] = value
+			}
 		}
 	}
-	return
+	return merr.AsError()
 }

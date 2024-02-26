@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 
 	"github.com/gildas/go-logger"
@@ -169,8 +168,6 @@ func runRootCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	for scanner.Scan() {
-		var entries map[string]interface{}
-		bigentries := map[string]interface{}{}
 		output := strings.Builder{}
 		line := scanner.Bytes()
 		var entry LogEntry
@@ -181,69 +178,7 @@ func runRootCommand(cmd *cobra.Command, args []string) error {
 			fmt.Println(string(line))
 			continue
 		}
-		if err := json.Unmarshal(line, &entries); err != nil {
-			log.Errorf("Failed to parse JSON: %s", err)
-			fmt.Println(string(line))
-			continue
-		}
-
 		entry.Write(cmd.Context(), &output, &CmdOptions.OutputOptions)
-
-		fmt.Printf("fields: %v\n", entry.Fields)
-
-		delete(entries, "time")
-		delete(entries, "level")
-		delete(entries, "hostname")
-		delete(entries, "pid")
-		delete(entries, "tid")
-		delete(entries, "name")
-		delete(entries, "topic")
-		delete(entries, "scope")
-		delete(entries, "msg")
-		delete(entries, "v")
-
-		output.WriteString(" (")
-		index := 0
-		for key, field := range entries {
-			if value, ok := field.(string); ok {
-				if index > 0 {
-					output.WriteString(", ")
-				}
-				output.WriteString(key)
-				output.WriteString("=")
-				output.WriteString(value)
-			} else if value, ok := field.(float64); ok {
-				if index > 0 {
-					output.WriteString(", ")
-				}
-				output.WriteString(key)
-				output.WriteString("=")
-				output.WriteString(fmt.Sprintf("%g", value))
-			} else {
-				fmt.Printf("key %s is of type %T\n", key, field)
-				bigentries[key] = field
-			}
-			index++
-		}
-		if index > 0 {
-			output.WriteString(", ")
-		}
-		output.WriteString("tid=")
-		output.WriteString(strconv.FormatInt(entry.TaskID, 10))
-		output.WriteString(")")
-
-		// If some keys are left print them one by one with \n
-		if len(bigentries) > 0 {
-			output.WriteString("\n")
-			for key, field := range bigentries {
-				output.WriteString("    ")
-				output.WriteString(key)
-				output.WriteString(": ")
-				printField(field, &output, 4)
-				output.WriteString("\n")
-			}
-		}
-
 		fmt.Println(output.String())
 	}
 	if err := scanner.Err(); err != nil {
