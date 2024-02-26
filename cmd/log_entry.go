@@ -29,13 +29,13 @@ type LogEntry struct {
 func (entry LogEntry) Write(context context.Context, output io.Writer, options *OutputOptions) {
 	log := logger.Must(logger.FromContext(context))
 	when := entry.Time.UTC()
-	if options.LocalTime {
-		when = entry.Time.Local()
+	if options.Location != nil {
+		when = entry.Time.In(options.Location)
 	}
 
 	if options.Output.Value == "short" {
 		whenFormat := "15:04:05.000Z"
-		if options.LocalTime {
+		if options.Location != nil {
 			whenFormat = "15:04:05.000"
 		}
 		entry.writeString(output, options, when.Format(whenFormat))
@@ -46,7 +46,7 @@ func (entry LogEntry) Write(context context.Context, output io.Writer, options *
 		entry.writeString(output, options, ": ")
 	} else {
 		whenFormat := "2006-01-02T15:04:05.000"
-		if options.LocalTime {
+		if options.Location != nil {
 			whenFormat = "2006-01-02T15:04:05.000Z07:00"
 		}
 		entry.writeString(output, options, "[")
