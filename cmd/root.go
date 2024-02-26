@@ -8,23 +8,27 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gildas/go-logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
+type OutputOptions struct {
+	LogLevel  string
+	Filter    string
+	LocalTime bool
+	UseColors bool
+}
+
 // CmdOptions contains the global options
 var CmdOptions struct {
+	OutputOptions
 	ConfigFile     string
 	LogDestination string
-	LogLevel       string
-	Filter         string
 	Output         string
-	LocalTime      bool
-	UseColors      bool
 	UsePager       bool
 	Strict         bool
 	Verbose        bool
@@ -53,7 +57,7 @@ func init() {
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.Strict, "strict", false, "Suppress all but legal Bunyan JSON log lines. By default non-JSON, and non-Bunyan lines are passed through.")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UsePager, "pager", false, "Pipe output into `less` (or $PAGER if set), if stdout is a TTY. This overrides $BUNYAN_NO_PAGER.")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UseColors, "color", true, "Colorize output. Defaults to try if output stream is a TTY.")
-	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UseColors, "no-color", false, "Force no coloring.")
+	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UseColors, "no-color", true, "Force no coloring.")
 	RootCmd.PersistentFlags().StringVarP(&CmdOptions.Output, "output", "o", "long", "output mode/format. One of long, json, json-N, bunyan, inspect, short, simple, html, serve, server")
 
 	// LogLevel should also support: https://github.com/gildas/go-logger#setting-the-filterlevel
@@ -165,19 +169,14 @@ func runRootCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	for scanner.Scan() {
-		log.Infof(scanner.Text())
-		var common struct {
-			Time     time.Time `json:"time"`
-			Level    int       `json:"level"`
-			Hostname string    `json:"hostname"`
-			Name     string    `json:"name"`
-			PID      int       `json:"pid"`
-			Message  string    `json:"msg"`
-		}
 		var entries map[string]interface{}
+		bigentries := map[string]interface{}{}
 		output := strings.Builder{}
 		line := scanner.Bytes()
-		if err := json.Unmarshal(line, &common); err != nil {
+		var entry LogEntry
+
+		log.Infof(scanner.Text())
+		if err := json.Unmarshal(line, &entry); err != nil {
 			log.Errorf("Failed to parse JSON: %s", err)
 			fmt.Println(string(line))
 			continue
@@ -188,55 +187,62 @@ func runRootCommand(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
-		output.WriteString("[")
-		output.WriteString(common.Time.Format("2006-01-02T15:04:05.000Z07:00"))
-		output.WriteString("] ")
-		output.WriteString(LevelColors[common.Level]) // Be sure to supprot levels not in the map
-		output.WriteString(logger.Level(common.Level).String())
-		output.WriteString(Reset)
-		output.WriteString(": ")
-		output.WriteString(common.Name)
-		output.WriteString("/")
-		output.WriteString(fmt.Sprintf("%d", common.PID))
-		output.WriteString(" on ")
-		output.WriteString(common.Hostname)
-		output.WriteString(": ")
-		output.WriteString(Cyan)
-		output.WriteString(common.Message)
-		output.WriteString(Reset)
+		entry.Write(cmd.Context(), &output, &CmdOptions.OutputOptions)
+
+		fmt.Printf("fields: %v\n", entry.Fields)
 
 		delete(entries, "time")
 		delete(entries, "level")
 		delete(entries, "hostname")
 		delete(entries, "pid")
+		delete(entries, "tid")
 		delete(entries, "name")
+		delete(entries, "topic")
+		delete(entries, "scope")
 		delete(entries, "msg")
 		delete(entries, "v")
 
-		output.WriteString("(")
+		output.WriteString(" (")
+		index := 0
 		for key, field := range entries {
 			if value, ok := field.(string); ok {
+				if index > 0 {
+					output.WriteString(", ")
+				}
 				output.WriteString(key)
 				output.WriteString("=")
 				output.WriteString(value)
-			} else if value, ok := field.(int); ok {
+			} else if value, ok := field.(float64); ok {
+				if index > 0 {
+					output.WriteString(", ")
+				}
 				output.WriteString(key)
 				output.WriteString("=")
-				output.WriteString(fmt.Sprintf("%d", value))
-			} else if stringer, ok := field.(fmt.Stringer); ok {
-				output.WriteString(key)
-				output.WriteString("=")
-				output.WriteString(stringer.String())
+				output.WriteString(fmt.Sprintf("%g", value))
 			} else {
-				output.WriteString(key)
-				output.WriteString("=")
-				output.WriteString(fmt.Sprintf("%v", field))
+				fmt.Printf("key %s is of type %T\n", key, field)
+				bigentries[key] = field
 			}
+			index++
+		}
+		if index > 0 {
 			output.WriteString(", ")
 		}
+		output.WriteString("tid=")
+		output.WriteString(strconv.FormatInt(entry.TaskID, 10))
 		output.WriteString(")")
 
 		// If some keys are left print them one by one with \n
+		if len(bigentries) > 0 {
+			output.WriteString("\n")
+			for key, field := range bigentries {
+				output.WriteString("    ")
+				output.WriteString(key)
+				output.WriteString(": ")
+				printField(field, &output, 4)
+				output.WriteString("\n")
+			}
+		}
 
 		fmt.Println(output.String())
 	}
