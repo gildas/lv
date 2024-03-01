@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -61,7 +62,7 @@ func init() {
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.Strict, "strict", false, "Suppress all but legal Bunyan JSON log lines. By default non-JSON, and non-Bunyan lines are passed through.")
 	RootCmd.PersistentFlags().BoolVarP(&CmdOptions.LocalTime, "local", "L", false, "Display time field in local time, rather than UTC.")
 	RootCmd.PersistentFlags().StringVar(&CmdOptions.Timezone, "time", "", "Display time field in the given timezone.")
-	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UsePager, "pager", false, "Pipe output into `less` (or $PAGER if set), if stdout is a TTY. This overrides $BUNYAN_NO_PAGER.")
+	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UsePager, "no-pager", true, "Do not pipe output into a pager. By default, the output is piped throug `less` (or $PAGER if set), if stdout is a TTY")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UseColors, "no-color", false, "Do not colorize output. By default, the output is colorized if stdout is a TTY")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UseColors, "color", true, "Colorize output always, even if the output stream is not a TTY.")
 	RootCmd.PersistentFlags().VarP(CmdOptions.Output, "output", "o", "output mode/format. One of long, json, json-N, bunyan, inspect, short, simple, html, serve, server")
@@ -155,6 +156,11 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 		CmdOptions.UseColors = true
 	}
 
+	CmdOptions.UsePager = isatty()
+	if cmd.Flags().Changed("no-pager") {
+		CmdOptions.UsePager = false
+	}
+
 	if CmdOptions.LocalTime {
 		CmdOptions.Location = time.Local
 	} else if CmdOptions.Location, err = ParseLocation(CmdOptions.Timezone); err != nil {
@@ -178,6 +184,18 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 		scanner = bufio.NewScanner(file)
 	}
 
+	var outstream io.WriteCloser = os.Stdout
+
+	if CmdOptions.UsePager { // && isatty() {
+		var closer func()
+
+		if outstream, closer, err = GetPager(cmd.Context()); err != nil {
+			log.Fatalf("Failed to get pager", err)
+			return err
+		}
+		defer closer()
+	}
+
 	for scanner.Scan() {
 		output := strings.Builder{}
 		line := scanner.Bytes()
@@ -186,12 +204,12 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 		log.Infof(scanner.Text())
 		if err := json.Unmarshal(line, &entry); err != nil {
 			log.Errorf("Failed to parse JSON: %s", err)
-			fmt.Println(string(line))
+			fmt.Fprintln(outstream, string(line))
 			continue
 		}
 		if filter.Filter(entry) {
 			entry.Write(cmd.Context(), &output, &CmdOptions.OutputOptions)
-			fmt.Println(output.String())
+			fmt.Fprintln(outstream, output.String())
 		}
 	}
 	if err := scanner.Err(); err != nil {
