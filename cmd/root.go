@@ -62,8 +62,8 @@ func init() {
 	RootCmd.PersistentFlags().BoolVarP(&CmdOptions.LocalTime, "local", "L", false, "Display time field in local time, rather than UTC.")
 	RootCmd.PersistentFlags().StringVar(&CmdOptions.Timezone, "time", "", "Display time field in the given timezone.")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UsePager, "pager", false, "Pipe output into `less` (or $PAGER if set), if stdout is a TTY. This overrides $BUNYAN_NO_PAGER.")
-	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UseColors, "no-color", false, "Force no coloring.")
-	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UseColors, "color", true, "Colorize output. Defaults to try if output stream is a TTY.")
+	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UseColors, "no-color", false, "Do not colorize output. By default, the output is colorized if stdout is a TTY")
+	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UseColors, "color", true, "Colorize output always, even if the output stream is not a TTY.")
 	RootCmd.PersistentFlags().VarP(CmdOptions.Output, "output", "o", "output mode/format. One of long, json, json-N, bunyan, inspect, short, simple, html, serve, server")
 
 	// LogLevel should also support: https://github.com/gildas/go-logger#setting-the-filterlevel
@@ -147,9 +147,14 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 	var scanner *bufio.Scanner
 	var filter LogFilter = AllLogFilter{}
 
+	CmdOptions.UseColors = isatty()
 	if cmd.Flags().Changed("no-color") {
 		CmdOptions.UseColors = false
 	}
+	if cmd.Flags().Changed("color") {
+		CmdOptions.UseColors = true
+	}
+
 	if CmdOptions.LocalTime {
 		CmdOptions.Location = time.Local
 	} else if CmdOptions.Location, err = ParseLocation(CmdOptions.Timezone); err != nil {
