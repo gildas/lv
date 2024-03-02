@@ -26,6 +26,39 @@ type LogEntry struct {
 	Blobs    map[string]any
 }
 
+func (entry LogEntry) GetField(name string) string {
+	if value, ok := entry.Fields[name]; ok {
+		if str, ok := value.(string); ok {
+			return str
+		}
+	}
+	if name == "level" {
+		return entry.Level.String()
+	}
+	if name == "hostname" {
+		return entry.Hostname
+	}
+	if name == "name" {
+		return entry.Name
+	}
+	if name == "pid" {
+		return strconv.FormatInt(entry.PID, 10)
+	}
+	if name == "tid" {
+		return strconv.FormatInt(entry.TaskID, 10)
+	}
+	if name == "topic" {
+		return entry.Topic
+	}
+	if name == "scope" {
+		return entry.Scope
+	}
+	if name == "msg" {
+		return entry.Message
+	}
+	return ""
+}
+
 func (entry LogEntry) Write(context context.Context, output io.Writer, options *OutputOptions) {
 	log := logger.Must(logger.FromContext(context))
 	when := entry.Time.UTC()

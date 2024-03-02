@@ -17,3 +17,7 @@ func (level LogLevel) Write(output io.Writer, options *OutputOptions) {
 		_, _ = output.Write([]byte(Reset))
 	}
 }
+
+func (level LogLevel) String() string {
+	return logger.Level(level).String()
+}

@@ -56,9 +56,10 @@ func init() {
 	cobra.CheckErr(err)
 
 	CmdOptions.Output = flags.NewEnumFlag("+long", "bunyan", "short", "simple", "html", "serve", "server")
-	RootCmd.PersistentFlags().StringVarP(&CmdOptions.ConfigFile, "config", "c", "", fmt.Sprintf("config file (default is %s)", filepath.Join(configDir, "bunyan", "config.yaml")))
+	RootCmd.PersistentFlags().StringVar(&CmdOptions.ConfigFile, "config", "", fmt.Sprintf("config file (default is %s)", filepath.Join(configDir, "bunyan", "config.yaml")))
 	RootCmd.PersistentFlags().StringVar(&CmdOptions.LogLevel, "level", "", "Only shows log entries with a level at or above the given value.")
 	RootCmd.PersistentFlags().StringVarP(&CmdOptions.Filter, "filter", "f", "", "Run each log message through the filter.")
+	RootCmd.PersistentFlags().StringVarP(&CmdOptions.Filter, "condition", "c", "", "Run each log message through the filter.")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.Strict, "strict", false, "Suppress all but legal Bunyan JSON log lines. By default non-JSON, and non-Bunyan lines are passed through.")
 	RootCmd.PersistentFlags().BoolVarP(&CmdOptions.LocalTime, "local", "L", false, "Display time field in local time, rather than UTC.")
 	RootCmd.PersistentFlags().StringVar(&CmdOptions.Timezone, "time", "", "Display time field in the given timezone.")
@@ -66,8 +67,6 @@ func init() {
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UseColors, "no-color", false, "Do not colorize output. By default, the output is colorized if stdout is a TTY")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UseColors, "color", true, "Colorize output always, even if the output stream is not a TTY.")
 	RootCmd.PersistentFlags().VarP(CmdOptions.Output, "output", "o", "output mode/format. One of long, json, json-N, bunyan, inspect, short, simple, html, serve, server")
-
-	// LogLevel should also support: https://github.com/gildas/go-logger#setting-the-filterlevel
 
 	// --strict suppresses all but legal Bunyan log entries. By default, non-Bunyan entries are passed through.
 	/*
@@ -81,14 +80,6 @@ func init() {
 	   p('                the log record. The TRACE, DEBUG, ... FATAL values');
 	   p('                are defined to help with comparing `this.level`.');
 	   How about some Go Template?
-	   p('Output options:');
-	   p('  --no-pager    Do not pipe output into a pager.');
-	   p('');
-	   p('Environment Variables:');
-	   p('  BUNYAN_NO_COLOR    Set to a non-empty value to force no output ');
-	   p('                     coloring. See "--no-color".');
-	   p('  BUNYAN_NO_PAGER    Disable piping output to a pager. ');
-	   p('                     See "--no-pager".');
 	*/
 	RootCmd.PersistentFlags().StringVar(&CmdOptions.LogDestination, "log", "", "where logs are writen if given (by default, no log is generated)")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.Debug, "debug", false, "forces logging at DEBUG level")
@@ -146,7 +137,6 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 	// Here we should read from stdin or from the files
 	log := logger.Must(logger.FromContext(cmd.Context()))
 	var scanner *bufio.Scanner
-	var filter LogFilter = AllLogFilter{}
 
 	CmdOptions.UseColors = isatty()
 	if cmd.Flags().Changed("no-color") {
@@ -166,10 +156,6 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 	} else if CmdOptions.Location, err = ParseLocation(CmdOptions.Timezone); err != nil {
 		log.Fatalf("Failed to load timezone %s: %s", CmdOptions.Timezone, err)
 		return err
-	}
-
-	if len(CmdOptions.LogLevel) > 0 {
-		filter = LevelLogFilter{logger.ParseLevels(CmdOptions.LogLevel)}
 	}
 
 	if len(args) == 0 {
@@ -195,6 +181,22 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 		}
 		defer closer()
 	}
+
+	filters := MultiLogFilter{}
+
+	if len(CmdOptions.LogLevel) > 0 {
+		filters.Add(NewLevelLogFilter(CmdOptions.Filter))
+	}
+	if len(CmdOptions.Filter) > 0 {
+		filter, err := NewConditionFilter(CmdOptions.Filter)
+		if err != nil {
+			log.Fatalf("Failed to create filter: %s", err)
+			return err
+		}
+		filters.Add(filter)
+		log.Infof("Added Filter: %#v", filter)
+	}
+	var filter LogFilter = filters.AsFilter()
 
 	for scanner.Scan() {
 		output := strings.Builder{}
