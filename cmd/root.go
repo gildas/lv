@@ -34,7 +34,6 @@ var CmdOptions struct {
 	LocalTime      bool
 	Timezone       string
 	UsePager       bool
-	Strict         bool
 	Verbose        bool
 	Debug          bool
 }
@@ -60,27 +59,12 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&CmdOptions.LogLevel, "level", "", "Only shows log entries with a level at or above the given value.")
 	RootCmd.PersistentFlags().StringVarP(&CmdOptions.Filter, "filter", "f", "", "Run each log message through the filter.")
 	RootCmd.PersistentFlags().StringVarP(&CmdOptions.Filter, "condition", "c", "", "Run each log message through the filter.")
-	RootCmd.PersistentFlags().BoolVar(&CmdOptions.Strict, "strict", false, "Suppress all but legal Bunyan JSON log lines. By default non-JSON, and non-Bunyan lines are passed through.")
 	RootCmd.PersistentFlags().BoolVarP(&CmdOptions.LocalTime, "local", "L", false, "Display time field in local time, rather than UTC.")
 	RootCmd.PersistentFlags().StringVar(&CmdOptions.Timezone, "time", "", "Display time field in the given timezone.")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UsePager, "no-pager", true, "Do not pipe output into a pager. By default, the output is piped throug `less` (or $PAGER if set), if stdout is a TTY")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UseColors, "no-color", false, "Do not colorize output. By default, the output is colorized if stdout is a TTY")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UseColors, "color", true, "Colorize output always, even if the output stream is not a TTY.")
 	RootCmd.PersistentFlags().VarP(CmdOptions.Output, "output", "o", "output mode/format. One of long, json, json-N, bunyan, inspect, short, simple, html, serve, server")
-
-	// --strict suppresses all but legal Bunyan log entries. By default, non-Bunyan entries are passed through.
-	/*
-	   p('  -c, --condition CONDITION');
-	   p('                Run each log message through the condition and');
-	   p('                only show those that return truish. E.g.:');
-	   p('                    -c \'this.pid == 123\'');
-	   p('                    -c \'this.level == DEBUG\'');
-	   p('                    -c \'this.msg.indexOf("boom") != -1\'');
-	   p('                "CONDITION" must be legal JS code. `this` holds');
-	   p('                the log record. The TRACE, DEBUG, ... FATAL values');
-	   p('                are defined to help with comparing `this.level`.');
-	   How about some Go Template?
-	*/
 	RootCmd.PersistentFlags().StringVar(&CmdOptions.LogDestination, "log", "", "where logs are writen if given (by default, no log is generated)")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.Debug, "debug", false, "forces logging at DEBUG level")
 	RootCmd.PersistentFlags().BoolVarP(&CmdOptions.Verbose, "verbose", "v", false, "runs verbosely if set")
