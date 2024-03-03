@@ -15,7 +15,7 @@ var stamp string
 var VERSION = "0.0.0"
 
 // APP is the name of the application
-const APP = "bunyan"
+const APP = "lv"
 
 // Version gets the current version of the application
 func Version() string {
