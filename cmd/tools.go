@@ -5,23 +5,20 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/gildas/go-logger"
 	"golang.org/x/term"
 )
 
-func rightpad(s string, length int) string {
-	for len(s) < length {
-		s = s + " "
-	}
-	return s
-}
-
 func leftpad(s string, length int) string {
-	for len(s) < length {
-		s = " " + s
+	var result strings.Builder
+	var pad = length - len(s)
+	for i := 0; i < pad; i++ {
+		result.WriteString(" ")
 	}
-	return s
+	result.WriteString(s)
+	return result.String()
 }
 
 func isatty() bool {

@@ -150,11 +150,11 @@ func (entry LogEntry) Write(context context.Context, output io.Writer, options *
 	}
 }
 
-func (entry LogEntry) writeString(output io.Writer, options *OutputOptions, value string) {
+func (entry LogEntry) writeString(output io.Writer, _ *OutputOptions, value string) {
 	_, _ = output.Write([]byte(value))
 }
 
-func (entry LogEntry) writeInt64(output io.Writer, options *OutputOptions, value int64) {
+func (entry LogEntry) writeInt64(output io.Writer, _ *OutputOptions, value int64) {
 	_, _ = output.Write([]byte(strconv.FormatInt(value, 10)))
 }
 
@@ -216,7 +216,7 @@ func (entry LogEntry) writeBlob(output io.Writer, options *OutputOptions, blob a
 	}
 }
 
-func (entry LogEntry) writeIndent(output io.Writer, options *OutputOptions, indent int) {
+func (entry LogEntry) writeIndent(output io.Writer, _ *OutputOptions, indent int) {
 	for i := 0; i < indent; i++ {
 		_, _ = output.Write([]byte(" "))
 	}
