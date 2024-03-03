@@ -119,9 +119,9 @@ all: test build; ## Test and Build the application
 
 gendoc: __gendoc_init__ $(BIN_DIR)/$(PROJECT).pdf; @ ## Generate the PDF documentation
 
-publish: __publish_init__ __publish_binaries__ __publish_snap__; @ ## Publish the binaries to the Repository
+publish: __publish_init__ __publish_binaries__; @ ## Publish the binaries to the Repository
 
-archive: __archive_init__ __archive_all__ __archive_debian__ __archive_rpm__ __archive_snap__ __archive_chocolatey__ ; @ ## Archive the binaries
+archive: __archive_init__ __archive_all__ __archive_debian__ __archive_rpm__ __archive_chocolatey__ ; @ ## Archive the binaries
 
 build: __build_init__ __build_all__; @ ## Build the application for all platforms
 
