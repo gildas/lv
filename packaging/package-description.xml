@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component>
+	<id>bb</id>
+	<name>lv</name>
+	<summary>lv is a logviewer</summary>
+	<description>
+      lv is a logviewer for bunyan and pinojs logger.
+	</description>
+	<releases>
+		<release date="2024-03-03" version="0.1.0"/>
+	</releases>
+</component>
