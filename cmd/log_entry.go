@@ -274,7 +274,9 @@ func (entry *LogEntry) UnmarshalJSON(payload []byte) (err error) {
 				entry.TaskID = int64(number)
 			}
 		case "time":
-			if tvalue, ok := value.(string); !ok {
+			if number, ok := value.(float64); ok {
+				entry.Time = time.UnixMilli(int64(number))
+			} else if tvalue, ok := value.(string); !ok {
 				merr.Append(errors.ArgumentInvalid.With("time", value))
 			} else if entry.Time, err = time.Parse(time.RFC3339, tvalue); err != nil {
 				merr.Append(errors.Join(errors.ArgumentInvalid.With("time", value), err))
