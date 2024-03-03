@@ -29,6 +29,7 @@ type OutputOptions struct {
 // CmdOptions contains the global options
 var CmdOptions struct {
 	OutputOptions
+	Completion     *flags.EnumFlag
 	ConfigFile     string
 	LogDestination string
 	LocalTime      bool
@@ -55,6 +56,8 @@ func init() {
 	cobra.CheckErr(err)
 
 	CmdOptions.Output = flags.NewEnumFlag("+long", "bunyan", "short", "simple", "html", "serve", "server")
+	CmdOptions.Completion = flags.NewEnumFlag("bash", "zsh", "fish", "powershell", "help")
+	RootCmd.PersistentFlags().Var(CmdOptions.Completion, "completion", "Generates completion script for bash, zsh, fish, or powershell")
 	RootCmd.PersistentFlags().StringVar(&CmdOptions.ConfigFile, "config", "", fmt.Sprintf("config file (default is %s)", filepath.Join(configDir, "bunyan", "config.yaml")))
 	RootCmd.PersistentFlags().StringVar(&CmdOptions.LogLevel, "level", "", "Only shows log entries with a level at or above the given value.")
 	RootCmd.PersistentFlags().StringVarP(&CmdOptions.Filter, "filter", "f", "", "Run each log message through the filter.")
@@ -69,6 +72,7 @@ func init() {
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.Debug, "debug", false, "forces logging at DEBUG level")
 	RootCmd.PersistentFlags().BoolVarP(&CmdOptions.Verbose, "verbose", "v", false, "runs verbosely if set")
 	_ = RootCmd.RegisterFlagCompletionFunc("output", CmdOptions.Output.CompletionFunc("output"))
+	_ = RootCmd.RegisterFlagCompletionFunc("completion", CmdOptions.Completion.CompletionFunc("completion"))
 
 	RootCmd.SilenceUsage = true
 	cobra.OnInitialize(initConfig)
@@ -121,6 +125,10 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 	// Here we should read from stdin or from the files
 	log := logger.Must(logger.FromContext(cmd.Context()))
 	var scanner *bufio.Scanner
+
+	if cmd.Flags().Changed("completion") {
+		return generateCompletion(cmd, CmdOptions.Completion.Value)
+	}
 
 	CmdOptions.UseColors = isatty()
 	if cmd.Flags().Changed("no-color") {

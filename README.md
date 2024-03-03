@@ -98,6 +98,68 @@ Here is a list of the flags you can use with `lv`:
       --version            version for lv
 ```
 
+### Completion
+
+`lv` supports shell completion for `bash`, `fish`, `PowerShell`, and `zsh`.
+
+#### Bash
+
+To enable completion, run the following command:
+
+```bash
+source <(lv --completion bash)
+```
+
+You can also add this line to your `~/.bashrc` file to enable completion for every new shell.
+
+```bash
+lv --completion bash > ~/.bashrc
+```
+
+#### Fish
+
+To enable completion, run the following command:
+
+```bash
+lv --completion fish | source
+```
+
+You can also add this line to your `~/.config/fish/config.fish` file to enable completion for every new shell.
+
+```bash
+lv --completion fish > ~/.config/fish/completions/lv.fish
+```
+
+#### Powershell
+
+To enable completion, run the following command:
+
+```pwsh
+lv --completion powershell | Out-String | Invoke-Expression
+```
+
+You can also add the output of the above command to your `$PROFILE` file to enable completion for every new shell.
+
+#### zsh
+
+To enable completion, run the following command:
+
+```bash
+source <(lv --completion zsh)
+```
+
+You can also add this line to your functions folder to enable completion for every new shell.
+
+```bash
+lv --completion zsh > "~/${fpath[1]}/_lv"
+```
+
+On macOS, you can add the completion to the brew functions:
+
+```bash
+lv --completion zsh > "$(brew --prefix)/share/zsh/site-functions/_lv"
+```
+
 ## Caveats
 
 Not all the output formats are implemented yet.
