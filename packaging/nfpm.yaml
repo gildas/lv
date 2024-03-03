@@ -1,0 +1,20 @@
+name:     {{.Env.PACKAGE}}
+platform: {{index (.Env.PLATFORM | strings.Split "-") 0 }}
+arch:     {{index (.Env.PLATFORM | strings.Split "-") 1 }}
+version:  {{.Env.VERSION}}
+release: {{.Env.REVISION}}
+section: default
+priority: extra
+replaces:
+- {{.Env.PACKAGE}}
+provides:
+- {{.Env.PACKAGE}}
+maintainer: "Gildas Cherruel <gildas@breizh.org>"
+description: |
+  lv is a logviewer for bunyan and pino logger.
+vendor: "Gildas Cherruel"
+homepage: "https://github.com/gildas/lv"
+license: "MIT"
+contents:
+- src: ./bin/{{.Env.PLATFORM}}/{{.Env.PROJECT}}
+  dst: /usr/bin/{{.Env.PROJECT}}

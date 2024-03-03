@@ -28,7 +28,7 @@ PROJECT   != awk '/^const +APP += +/{gsub("\"", "", $$4); print $$4}' version.go
 ifeq (${PROJECT},)
 PROJECT   != basename "$(PWD)"
 endif
-PACKAGE   = bitbucket-cli
+PACKAGE   = lv
 PACKAGE   ?= $(PROJECT)
 PLATFORMS ?= darwin-amd64 darwin-arm64 linux-amd64 linux-arm64 windows-amd64 windows-arm64
 export PACKAGE PROJECT VERSION BRANCH COMMIT BUILD REVISION
@@ -66,7 +66,6 @@ COPY    ?= cp -f
 # Flags
 #MAKEFLAGS += --silent
 # GO
-export GOPRIVATE   ?= bitbucket.org/gildas_cherruel/*
 export CGO_ENABLED  = 0
 ifneq ($(what),)
 TEST_ARG := -run '$(what)'
@@ -122,7 +121,7 @@ gendoc: __gendoc_init__ $(BIN_DIR)/$(PROJECT).pdf; @ ## Generate the PDF documen
 
 publish: __publish_init__ __publish_binaries__ __publish_snap__; @ ## Publish the binaries to the Repository
 
-archive: __archive_init__ __archive_all__ __archive_chocolatey__ __archive_debian__ __archive_rpm__ __archive_snap__ ; @ ## Archive the binaries
+archive: __archive_init__ __archive_all__ __archive_debian__ __archive_rpm__ __archive_snap__ __archive_chocolatey__ ; @ ## Archive the binaries
 
 build: __build_init__ __build_all__; @ ## Build the application for all platforms
 
