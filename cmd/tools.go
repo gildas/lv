@@ -21,7 +21,11 @@ func leftpad(s string, length int) string {
 	return result.String()
 }
 
-func isatty() bool {
+func isStdinTTY() bool {
+	return term.IsTerminal(int(os.Stdin.Fd()))
+}
+
+func isStdoutTTY() bool {
 	return term.IsTerminal(int(os.Stdout.Fd()))
 }
 

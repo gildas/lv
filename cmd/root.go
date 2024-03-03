@@ -130,7 +130,7 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 		return generateCompletion(cmd, CmdOptions.Completion.Value)
 	}
 
-	CmdOptions.UseColors = isatty()
+	CmdOptions.UseColors = isStdoutTTY()
 	if cmd.Flags().Changed("no-color") {
 		CmdOptions.UseColors = false
 	}
@@ -138,7 +138,7 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 		CmdOptions.UseColors = true
 	}
 
-	CmdOptions.UsePager = isatty()
+	CmdOptions.UsePager = isStdoutTTY() && isStdinTTY()
 	if cmd.Flags().Changed("no-pager") {
 		CmdOptions.UsePager = false
 	}
@@ -164,7 +164,7 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 
 	var outstream io.WriteCloser = os.Stdout
 
-	if CmdOptions.UsePager { // && isatty() {
+	if CmdOptions.UsePager {
 		var closer func()
 
 		if outstream, closer, err = GetPager(cmd.Context()); err != nil {
