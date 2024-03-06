@@ -17,6 +17,7 @@ func NewLevelLogFilter(level string) *LevelLogFilter {
 func (filter LevelLogFilter) Filter(context context.Context, entry LogEntry) bool {
 	log := logger.Must(logger.FromContext(context)).Child("filter", "filter", "type", "level")
 
-	log.Debugf("Is %s above %s?", entry.Level, filter.LevelSet)
-	return filter.LevelSet.ShouldWrite(logger.Level(entry.Level), entry.Topic, entry.Scope)
+	shouldWrite := filter.LevelSet.ShouldWrite(logger.Level(entry.Level), entry.Topic, entry.Scope)
+	log.Debugf("Should %s be logged? %t", entry.Level, shouldWrite)
+	return shouldWrite
 }
