@@ -119,9 +119,9 @@ all: test build; ## Test and Build the application
 
 gendoc: __gendoc_init__ $(BIN_DIR)/$(PROJECT).pdf; @ ## Generate the PDF documentation
 
-publish: __publish_init__ __publish_binaries__ __publish_snap__; @ ## Publish the binaries to the Repository
+publish: __publish_init__ __publish_binaries__; @ ## Publish the binaries to the Repository
 
-archive: __archive_init__ __archive_all__ __archive_debian__ __archive_rpm__ __archive_snap__ __archive_chocolatey__ ; @ ## Archive the binaries
+archive: __archive_init__ __archive_all__ __archive_debian__ __archive_rpm__ __archive_chocolatey__ ; @ ## Archive the binaries
 
 build: __build_init__ __build_all__; @ ## Build the application for all platforms
 
@@ -214,13 +214,13 @@ __start__: stop $(BIN_DIR)/$(GOOS)/$(PROJECT) | $(TMP_DIR) $(LOG_DIR); $(info $(
 __publish_init__:;
 __publish_binaries__: archive
 	$(info $(M) Uploading the binary packages...)
-	$Q $(foreach archive, $(wildcard $(BIN_DIR)/*.tar.gz), go run . artifact upload --progress $(archive) ;)
-	$Q $(foreach archive, $(wildcard $(BIN_DIR)/*.zip),    go run . artifact upload --progress $(archive) ;)
-	$Q $(foreach archive, $(wildcard $(BIN_DIR)/*.7z),     go run . artifact upload --progress $(archive) ;)
+	$Q $(foreach archive, $(wildcard $(BIN_DIR)/*.tar.gz), gh release upload v$(VERSION) $(archive) ;)
+	$Q $(foreach archive, $(wildcard $(BIN_DIR)/*.zip),    gh release upload v$(VERSION) $(archive) ;)
+	$Q $(foreach archive, $(wildcard $(BIN_DIR)/*.7z),     gh release upload v$(VERSION) $(archive) ;)
 	$(info $(M) Uploading the Debian packages...)
-	$Q $(foreach archive, $(wildcard $(BIN_DIR)/*.deb),    go run . artifact upload --progress $(archive) ;)
+	$Q $(foreach archive, $(wildcard $(BIN_DIR)/*.deb),    gh release upload v$(VERSION) $(archive) ;)
 	$(info $(M) Uploading the RPM packages...)
-	$Q $(foreach archive, $(wildcard $(BIN_DIR)/*.rpm),    go run . artifact upload --progress $(archive) ;)
+	$Q $(foreach archive, $(wildcard $(BIN_DIR)/*.rpm),    gh release upload v$(VERSION) $(archive) ;)
 
 __publish_snap__: \
 	$(TMP_DIR)/__publish_snap__ \

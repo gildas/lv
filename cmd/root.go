@@ -130,7 +130,7 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 		return generateCompletion(cmd, CmdOptions.Completion.Value)
 	}
 
-	CmdOptions.UseColors = isatty()
+	CmdOptions.UseColors = isStdoutTTY()
 	if cmd.Flags().Changed("no-color") {
 		CmdOptions.UseColors = false
 	}
@@ -138,17 +138,19 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 		CmdOptions.UseColors = true
 	}
 
-	CmdOptions.UsePager = isatty()
+	CmdOptions.UsePager = isStdoutTTY() && isStdinTTY()
 	if cmd.Flags().Changed("no-pager") {
 		CmdOptions.UsePager = false
 	}
 
 	if CmdOptions.LocalTime {
+		log.Infof("Displaying local time")
 		CmdOptions.Location = time.Local
 	} else if CmdOptions.Location, err = ParseLocation(CmdOptions.Timezone); err != nil {
 		log.Fatalf("Failed to load timezone %s: %s", CmdOptions.Timezone, err)
 		return err
 	}
+	log.Infof("Displaying time at location: %s", CmdOptions.Location)
 
 	if len(args) == 0 {
 		scanner = bufio.NewScanner(os.Stdin)
@@ -164,7 +166,7 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 
 	var outstream io.WriteCloser = os.Stdout
 
-	if CmdOptions.UsePager { // && isatty() {
+	if CmdOptions.UsePager {
 		var closer func()
 
 		if outstream, closer, err = GetPager(cmd.Context()); err != nil {
@@ -177,9 +179,11 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 	filters := MultiLogFilter{}
 
 	if len(CmdOptions.LogLevel) > 0 {
-		filters.Add(NewLevelLogFilter(CmdOptions.Filter))
+		log.Infof("Adding log level filter at %s", CmdOptions.LogLevel)
+		filters.Add(NewLevelLogFilter(CmdOptions.LogLevel))
 	}
 	if len(CmdOptions.Filter) > 0 {
+		log.Infof("Adding filter: %s", CmdOptions.Filter)
 		filter, err := NewConditionFilter(CmdOptions.Filter)
 		if err != nil {
 			log.Fatalf("Failed to create filter: %s", err)
@@ -201,7 +205,7 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 			fmt.Fprintln(outstream, string(line))
 			continue
 		}
-		if filter.Filter(entry) {
+		if filter.Filter(cmd.Context(), entry) {
 			entry.Write(cmd.Context(), &output, &CmdOptions.OutputOptions)
 			fmt.Fprintln(outstream, output.String())
 		}

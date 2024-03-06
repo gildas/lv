@@ -1,5 +1,7 @@
 package cmd
 
+import "context"
+
 type MultiLogFilter struct {
 	Filters []LogFilter
 }
@@ -23,9 +25,9 @@ func (filter *MultiLogFilter) Add(filters ...LogFilter) *MultiLogFilter {
 	return filter
 }
 
-func (filter MultiLogFilter) Filter(entry LogEntry) bool {
+func (filter MultiLogFilter) Filter(context context.Context, entry LogEntry) bool {
 	for _, f := range filter.Filters {
-		if !f.Filter(entry) {
+		if !f.Filter(context, entry) {
 			return false
 		}
 	}
