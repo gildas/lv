@@ -201,7 +201,7 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 			fmt.Fprintln(outstream, string(line))
 			continue
 		}
-		if filter.Filter(entry) {
+		if filter.Filter(cmd.Context(), entry) {
 			entry.Write(cmd.Context(), &output, &CmdOptions.OutputOptions)
 			fmt.Fprintln(outstream, output.String())
 		}
