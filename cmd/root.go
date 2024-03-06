@@ -177,7 +177,7 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 	filters := MultiLogFilter{}
 
 	if len(CmdOptions.LogLevel) > 0 {
-		filters.Add(NewLevelLogFilter(CmdOptions.Filter))
+		filters.Add(NewLevelLogFilter(CmdOptions.LogLevel))
 	}
 	if len(CmdOptions.Filter) > 0 {
 		filter, err := NewConditionFilter(CmdOptions.Filter)
