@@ -144,11 +144,13 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 	}
 
 	if CmdOptions.LocalTime {
+		log.Infof("Displaying local time")
 		CmdOptions.Location = time.Local
 	} else if CmdOptions.Location, err = ParseLocation(CmdOptions.Timezone); err != nil {
 		log.Fatalf("Failed to load timezone %s: %s", CmdOptions.Timezone, err)
 		return err
 	}
+	log.Infof("Displaying time at location: %s", CmdOptions.Location)
 
 	if len(args) == 0 {
 		scanner = bufio.NewScanner(os.Stdin)
@@ -177,9 +179,11 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 	filters := MultiLogFilter{}
 
 	if len(CmdOptions.LogLevel) > 0 {
+		log.Infof("Adding log level filter at %s", CmdOptions.LogLevel)
 		filters.Add(NewLevelLogFilter(CmdOptions.LogLevel))
 	}
 	if len(CmdOptions.Filter) > 0 {
+		log.Infof("Adding filter: %s", CmdOptions.Filter)
 		filter, err := NewConditionFilter(CmdOptions.Filter)
 		if err != nil {
 			log.Fatalf("Failed to create filter: %s", err)
