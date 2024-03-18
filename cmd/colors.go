@@ -16,7 +16,7 @@ var LevelColors = map[int]string{
 	0:  Blue,
 	10: Gray,    // Trace
 	20: Yellow,  // Debug
-	30: Cyan,    // Info
+	30: Green,   // Info
 	40: Magenta, // Warning
 	50: Red,     // Error
 	60: Red,     // Fatal
