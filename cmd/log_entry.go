@@ -256,10 +256,12 @@ func (entry *LogEntry) UnmarshalJSON(payload []byte) (err error) {
 				merr.Append(errors.ArgumentInvalid.With("msg", value))
 			}
 		case "level":
-			if number, ok := value.(float64); !ok {
-				merr.Append(errors.ArgumentInvalid.With("level", value))
-			} else {
+			if number, ok := value.(float64); ok {
 				entry.Level = LogLevel(int(number))
+			} else if str, ok := value.(string); ok {
+				entry.Level = LogLevel(logger.ParseLevel(str))
+			} else {
+				merr.Append(errors.ArgumentInvalid.With("level", value))
 			}
 		case "pid":
 			if number, ok := value.(float64); !ok {
