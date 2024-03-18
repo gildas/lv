@@ -74,8 +74,10 @@ func (entry LogEntry) Write(context context.Context, output io.Writer, options *
 		entry.writeString(output, options, when.Format(whenFormat))
 		entry.writeString(output, options, " ")
 		entry.Level.Write(output, options)
-		entry.writeString(output, options, " ")
-		entry.writeString(output, options, entry.Name)
+		if len(entry.Name) > 0 {
+			entry.writeString(output, options, " ")
+			entry.writeString(output, options, entry.Name)
+		}
 		entry.writeString(output, options, ": ")
 	} else {
 		whenFormat := "2006-01-02T15:04:05.000"
@@ -87,12 +89,18 @@ func (entry LogEntry) Write(context context.Context, output io.Writer, options *
 		entry.writeString(output, options, "] ")
 		entry.Level.Write(output, options)
 		entry.writeString(output, options, ": ")
-		entry.writeString(output, options, entry.Name)
-		entry.writeString(output, options, "/")
-		entry.writeInt64(output, options, entry.PID)
-		entry.writeString(output, options, " on ")
-		entry.writeString(output, options, entry.Hostname)
-		entry.writeString(output, options, ": ")
+		if len(entry.Name) > 0 {
+			entry.writeString(output, options, entry.Name)
+		}
+		if entry.PID > 0 {
+			entry.writeString(output, options, "/")
+			entry.writeInt64(output, options, entry.PID)
+		}
+		if len(entry.Hostname) > 0 {
+			entry.writeString(output, options, " on ")
+			entry.writeString(output, options, entry.Hostname)
+			entry.writeString(output, options, ": ")
+		}
 	}
 
 	if len(entry.Topic) > 0 {
