@@ -62,7 +62,7 @@ func (entry LogEntry) GetField(name string) string {
 }
 
 // Write writes the LogEntry to the given io.Writer output
-// The output will be filtered and formatted according to the OutputOptions
+// The output will be formatted according to the OutputOptions
 func (entry LogEntry) Write(context context.Context, output io.Writer, options *OutputOptions) {
 	log := logger.Must(logger.FromContext(context))
 
@@ -76,23 +76,10 @@ func (entry LogEntry) Write(context context.Context, output io.Writer, options *
 		entry.writeString(output, options, " (")
 		index := 0
 		for key, field := range entry.Fields {
-			if value, ok := field.(string); ok {
-				if index > 0 {
-					entry.writeString(output, options, ", ")
-				}
-				entry.writeString(output, options, key)
-				entry.writeString(output, options, "=")
-				entry.writeString(output, options, value)
-			} else if value, ok := field.(float64); ok {
-				if index > 0 {
-					entry.writeString(output, options, ", ")
-				}
-				entry.writeString(output, options, key)
-				entry.writeString(output, options, "=")
-				entry.writeString(output, options, strconv.FormatFloat(value, 'g', -1, 64))
-			} else {
-				log.Debugf("key %s is of type %T", key, field)
+			if index > 0 {
+				entry.writeString(output, options, ", ")
 			}
+			entry.writeField(output, options, key, field)
 			index++
 		}
 		if index > 0 {
@@ -248,6 +235,20 @@ func (entry LogEntry) writeTopicAndScope(output io.Writer, options *OutputOption
 	}
 }
 
+func (entry LogEntry) writeField(output io.Writer, options *OutputOptions, field string, value any) {
+	entry.writeString(output, options, field)
+	entry.writeString(output, options, "=")
+	if value == nil {
+		entry.writeString(output, options, "<null>")
+	} else if actual, ok := value.(string); ok {
+		entry.writeString(output, options, actual)
+	} else if actual, ok := value.(float64); ok {
+		entry.writeString(output, options, strconv.FormatFloat(actual, 'g', -1, 64))
+	} else {
+		entry.writeString(output, options, fmt.Sprintf("%v", value))
+	}
+}
+
 // UnmarshalJSON unmarshal data into this
 func (entry *LogEntry) UnmarshalJSON(payload []byte) (err error) {
 	var data map[string]any
@@ -312,9 +313,13 @@ func (entry *LogEntry) UnmarshalJSON(payload []byte) (err error) {
 		case "severity", "v":
 			// ignore
 		default:
-			if _, ok := value.(string); ok {
+			if value == nil {
+				entry.Fields[key] = nil
+			} else if _, ok := value.(string); ok {
 				entry.Fields[key] = value
 			} else if _, ok := value.(float64); ok {
+				entry.Fields[key] = value
+			} else if _, ok := value.(bool); ok {
 				entry.Fields[key] = value
 			} else {
 				entry.Blobs[key] = value
