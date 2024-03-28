@@ -12,6 +12,7 @@ import (
 	"github.com/gildas/go-logger"
 )
 
+// LogEntry represents a log entry
 type LogEntry struct {
 	Time     time.Time `json:"time"`
 	Level    LogLevel  `json:"level"`
@@ -26,6 +27,7 @@ type LogEntry struct {
 	Blobs    map[string]any
 }
 
+// GetField retrieves the value of a specific field from the LogEntry.
 func (entry LogEntry) GetField(name string) string {
 	if value, ok := entry.Fields[name]; ok {
 		if str, ok := value.(string); ok {
@@ -59,107 +61,69 @@ func (entry LogEntry) GetField(name string) string {
 	return ""
 }
 
+// Write writes the LogEntry to the given io.Writer output
+// The output will be formatted according to the OutputOptions
 func (entry LogEntry) Write(context context.Context, output io.Writer, options *OutputOptions) {
 	log := logger.Must(logger.FromContext(context))
-	when := entry.Time.UTC()
-	if options.Location != nil {
-		when = entry.Time.In(options.Location)
-	}
 
-	if options.Output.Value == "short" {
-		whenFormat := "15:04:05.000Z"
-		if options.Location != nil {
-			whenFormat = "15:04:05.000"
-		}
-		entry.writeString(output, options, when.Format(whenFormat))
-		entry.writeString(output, options, " ")
-		entry.Level.Write(output, options)
-		if len(entry.Name) > 0 {
-			entry.writeString(output, options, " ")
-			entry.writeString(output, options, entry.Name)
-		}
-		entry.writeString(output, options, ": ")
-	} else {
-		whenFormat := "2006-01-02T15:04:05.000"
-		if options.Location != nil {
-			whenFormat = "2006-01-02T15:04:05.000Z07:00"
-		}
-		entry.writeString(output, options, "[")
-		entry.writeString(output, options, when.Format(whenFormat))
-		entry.writeString(output, options, "] ")
-		entry.Level.Write(output, options)
-		entry.writeString(output, options, ": ")
-		if len(entry.Name) > 0 {
-			entry.writeString(output, options, entry.Name)
-		}
-		if entry.PID > 0 {
-			entry.writeString(output, options, "/")
-			entry.writeInt64(output, options, entry.PID)
-		}
-		if len(entry.Hostname) > 0 {
-			entry.writeString(output, options, " on ")
-			entry.writeString(output, options, entry.Hostname)
-			entry.writeString(output, options, ": ")
-		}
-	}
-
-	if len(entry.Topic) > 0 {
-		entry.writeStringWithColor(output, options, entry.Topic, Green)
-		if len(entry.Scope) > 0 {
-			entry.writeString(output, options, "/")
-			entry.writeStringWithColor(output, options, entry.Scope, Yellow)
-		}
-		entry.writeString(output, options, " ")
-	}
+	entry.writeHeader(output, options)
+	entry.writeString(output, options, ": ")
+	entry.writeTopicAndScope(output, options)
 	entry.writeStringWithColor(output, options, entry.Message, Cyan)
 
 	log.Debugf("Fields: %v", entry.Fields)
+	entry.writeString(output, options, " (")
 	if len(entry.Fields) > 0 {
-		entry.writeString(output, options, " (")
 		index := 0
 		for key, field := range entry.Fields {
-			if value, ok := field.(string); ok {
-				if index > 0 {
-					entry.writeString(output, options, ", ")
-				}
-				entry.writeString(output, options, key)
-				entry.writeString(output, options, "=")
-				entry.writeString(output, options, value)
-			} else if value, ok := field.(float64); ok {
-				if index > 0 {
-					entry.writeString(output, options, ", ")
-				}
-				entry.writeString(output, options, key)
-				entry.writeString(output, options, "=")
-				entry.writeString(output, options, strconv.FormatFloat(value, 'g', -1, 64))
-			} else {
-				log.Debugf("key %s is of type %T", key, field)
+			if index > 0 {
+				entry.writeString(output, options, ", ")
 			}
+			entry.writeField(output, options, key, field)
 			index++
 		}
-		if index > 0 {
-			entry.writeString(output, options, ", ")
-		}
-		entry.writeString(output, options, "tid=")
-		entry.writeInt64(output, options, entry.TaskID)
-		entry.writeString(output, options, ")")
+		entry.writeString(output, options, ", ") // the Task ID follows
 	}
+	// Always write the Task ID at the end of he fields
+	entry.writeString(output, options, "tid=")
+	entry.writeInt64(output, options, entry.TaskID)
+	entry.writeString(output, options, ")")
 
 	log.Debugf("Blobs: %v", entry.Blobs)
 	if len(entry.Blobs) > 0 {
+		index := 0
 		entry.writeString(output, options, "\n")
 		for key, field := range entry.Blobs {
-			entry.writeString(output, options, "    ")
-			entry.writeString(output, options, key)
-			entry.writeString(output, options, ": ")
-			entry.writeBlob(output, options, field, 4)
-			entry.writeString(output, options, "\n")
+			if index > 0 {
+				entry.writeString(output, options, ", ")
+				entry.writeString(output, options, "\n")
+			}
+			entry.writeBlob(output, options, key, field, 4)
+			index++
 		}
+	}
+}
+
+func (entry LogEntry) writeIndent(output io.Writer, _ *OutputOptions, indent int) {
+	for i := 0; i < indent; i++ {
+		_, _ = output.Write([]byte(" "))
 	}
 }
 
 func (entry LogEntry) writeString(output io.Writer, _ *OutputOptions, value string) {
 	_, _ = output.Write([]byte(value))
+}
+
+func (entry LogEntry) writeBool(output io.Writer, _ *OutputOptions, value bool) {
+	if value {
+		entry.writeString(output, nil, "true")
+	} else {
+		entry.writeString(output, nil, "false")
+	}
+}
+
+func (entry LogEntry) writeFloat64(output io.Writer, _ *OutputOptions, value float64) {
+	_, _ = output.Write([]byte(strconv.FormatFloat(value, 'g', -1, 64)))
 }
 
 func (entry LogEntry) writeInt64(output io.Writer, _ *OutputOptions, value int64) {
@@ -176,58 +140,172 @@ func (entry LogEntry) writeStringWithColor(output io.Writer, options *OutputOpti
 	}
 }
 
-func (entry LogEntry) writeBlob(output io.Writer, options *OutputOptions, blob any, indent int) {
-	if value, ok := blob.(string); ok {
+func (entry LogEntry) writeBlob(output io.Writer, options *OutputOptions, name string, blob any, indent int) {
+	entry.writeIndent(output, options, indent)
+	if len(name) > 0 {
+		entry.writeString(output, options, name)
+		entry.writeString(output, options, ": ")
+	}
+	switch actual := blob.(type) {
+	case nil:
+		entry.writeString(output, options, "<null>")
+	case string:
 		entry.writeString(output, options, "\"")
-		entry.writeString(output, options, value)
+		entry.writeString(output, options, actual)
 		entry.writeString(output, options, "\"")
-	} else if value, ok := blob.(float64); ok {
-		entry.writeString(output, options, strconv.FormatFloat(value, 'g', -1, 64))
-	} else if value, ok := blob.(bool); ok {
-		if value {
-			entry.writeString(output, options, "true")
-		} else {
-			entry.writeString(output, options, "false")
+	case float64:
+		entry.writeFloat64(output, options, actual)
+	case bool:
+		entry.writeBool(output, options, actual)
+	case []any:
+		if len(actual) < 20 && areAllLiterals(actual) {
+			entry.writeString(output, options, "[")
+			for index, element := range actual {
+				if index > 0 {
+					entry.writeString(output, options, ", ")
+				}
+				entry.writeBlob(output, options, "", element, 0)
+			}
+			entry.writeString(output, options, "]")
+			break
 		}
-	} else if values, ok := blob.([]any); ok {
 		entry.writeString(output, options, "[\n")
-		entry.writeIndent(output, options, indent)
-		for index, value := range values {
+		for index, element := range actual {
 			if index > 0 {
 				entry.writeString(output, options, ", \n")
-				entry.writeIndent(output, options, indent)
 			}
-			entry.writeString(output, options, ", \n")
-			entry.writeBlob(output, options, value, indent+2)
+			entry.writeBlob(output, options, "", element, indent+2)
 		}
+		entry.writeString(output, options, "\n")
+		entry.writeIndent(output, options, indent)
 		entry.writeString(output, options, "]")
-	} else if values, ok := blob.(map[string]any); ok {
+	case map[string]any:
 		entry.writeString(output, options, "{\n")
 		index := 0
-		for key, value := range values {
-			entry.writeIndent(output, options, indent+2)
-			entry.writeString(output, options, "\"")
-			entry.writeString(output, options, key)
-			entry.writeString(output, options, "\": ")
-			entry.writeBlob(output, options, value, indent+2)
-			if index < len(values)-1 {
-				entry.writeString(output, options, ",\n")
+		for key, value := range actual {
+			if index > 0 {
+				entry.writeString(output, options, ", \n")
+			}
+			if isLiteral(value) {
+				entry.writeIndent(output, options, indent+2)
+				entry.writeString(output, options, "\"")
+				entry.writeString(output, options, key)
+				entry.writeString(output, options, "\": ")
+				entry.writeBlob(output, options, "", value, 0)
 			} else {
-				entry.writeString(output, options, "\n")
+				entry.writeBlob(output, options, "\""+key+"\"", value, indent+2)
 			}
 			index++
 		}
-		entry.writeIndent(output, options, indent-2)
+		entry.writeString(output, options, "\n")
+		entry.writeIndent(output, options, indent)
 		entry.writeString(output, options, "}")
-	} else {
+	default:
 		entry.writeString(output, options, "!!!"+fmt.Sprintf("%v", blob))
 	}
 }
 
-func (entry LogEntry) writeIndent(output io.Writer, _ *OutputOptions, indent int) {
-	for i := 0; i < indent; i++ {
-		_, _ = output.Write([]byte(" "))
+func (entry LogEntry) writeTimestamp(output io.Writer, options *OutputOptions) {
+	timestamp := entry.Time.UTC()
+	if options.Location != nil {
+		timestamp = entry.Time.In(options.Location)
 	}
+
+	if options.Output.Value == "short" {
+		timestampFormat := "15:04:05.000Z"
+		if options.Location != nil {
+			timestampFormat = "15:04:05.000"
+		}
+		entry.writeString(output, options, timestamp.Format(timestampFormat))
+		entry.writeString(output, options, " ")
+	} else {
+		timestampFormat := "2006-01-02T15:04:05.000"
+		if options.Location != nil {
+			timestampFormat = "2006-01-02T15:04:05.000Z07:00"
+		}
+		entry.writeString(output, options, "[")
+		entry.writeString(output, options, timestamp.Format(timestampFormat))
+		entry.writeString(output, options, "] ")
+	}
+}
+
+func (entry LogEntry) writeHeader(output io.Writer, options *OutputOptions) {
+	entry.writeTimestamp(output, options)
+	entry.Level.Write(output, options)
+
+	if options.Output.Value == "short" {
+		if len(entry.Name) > 0 {
+			entry.writeString(output, options, " ")
+			entry.writeString(output, options, entry.Name)
+		}
+	} else {
+		entry.writeString(output, options, ": ")
+		if len(entry.Name) > 0 {
+			entry.writeString(output, options, entry.Name)
+		}
+		if entry.PID > 0 {
+			entry.writeString(output, options, "/")
+			entry.writeInt64(output, options, entry.PID)
+		}
+		if len(entry.Hostname) > 0 {
+			entry.writeString(output, options, " on ")
+			entry.writeString(output, options, entry.Hostname)
+		}
+	}
+}
+
+func (entry LogEntry) writeTopicAndScope(output io.Writer, options *OutputOptions) {
+	if len(entry.Topic) > 0 {
+		entry.writeStringWithColor(output, options, entry.Topic, Green)
+		if len(entry.Scope) > 0 {
+			entry.writeString(output, options, "/")
+			entry.writeStringWithColor(output, options, entry.Scope, Yellow)
+		}
+		entry.writeString(output, options, " ")
+	}
+}
+
+func (entry LogEntry) writeField(output io.Writer, options *OutputOptions, field string, value any) {
+	entry.writeString(output, options, field)
+	entry.writeString(output, options, "=")
+	switch actual := value.(type) {
+	case nil:
+		entry.writeString(output, options, "<null>")
+	case string:
+		entry.writeString(output, options, actual)
+	case float64:
+		entry.writeFloat64(output, options, actual)
+	case bool:
+		entry.writeBool(output, options, actual)
+	case []any:
+		entry.writeString(output, options, "[")
+		for index, item := range actual {
+			if index > 0 {
+				entry.writeString(output, options, ", ")
+			}
+			entry.writeField(output, options, "", item)
+		}
+		entry.writeString(output, options, "]")
+	default:
+		entry.writeString(output, options, fmt.Sprintf("%v", value))
+	}
+}
+
+func isLiteral(value any) bool {
+	switch value.(type) {
+	case nil, string, float64, bool:
+		return true
+	}
+	return false
+}
+
+func areAllLiterals(values []any) bool {
+	for _, value := range values {
+		if !isLiteral(value) {
+			return false
+		}
+	}
+	return true
 }
 
 // UnmarshalJSON unmarshal data into this
@@ -294,10 +372,16 @@ func (entry *LogEntry) UnmarshalJSON(payload []byte) (err error) {
 		case "severity", "v":
 			// ignore
 		default:
-			if _, ok := value.(string); ok {
+			if value == nil {
+				entry.Fields[key] = nil
+			} else if _, ok := value.(string); ok {
 				entry.Fields[key] = value
 			} else if _, ok := value.(float64); ok {
 				entry.Fields[key] = value
+			} else if _, ok := value.(bool); ok {
+				entry.Fields[key] = value
+			} else if values, ok := value.([]any); ok && len(values) == 0 {
+				entry.Fields[key] = values
 			} else {
 				entry.Blobs[key] = value
 			}
