@@ -72,8 +72,8 @@ func (entry LogEntry) Write(context context.Context, output io.Writer, options *
 	entry.writeStringWithColor(output, options, entry.Message, Cyan)
 
 	log.Debugf("Fields: %v", entry.Fields)
+	entry.writeString(output, options, " (")
 	if len(entry.Fields) > 0 {
-		entry.writeString(output, options, " (")
 		index := 0
 		for key, field := range entry.Fields {
 			if index > 0 {
@@ -82,13 +82,12 @@ func (entry LogEntry) Write(context context.Context, output io.Writer, options *
 			entry.writeField(output, options, key, field)
 			index++
 		}
-		if index > 0 {
-			entry.writeString(output, options, ", ")
-		}
-		entry.writeString(output, options, "tid=")
-		entry.writeInt64(output, options, entry.TaskID)
-		entry.writeString(output, options, ")")
+		entry.writeString(output, options, ", ") // the Task ID follows
 	}
+	// Always write the Task ID at the end of he fields
+	entry.writeString(output, options, "tid=")
+	entry.writeInt64(output, options, entry.TaskID)
+	entry.writeString(output, options, ")")
 
 	log.Debugf("Blobs: %v", entry.Blobs)
 	if len(entry.Blobs) > 0 {
