@@ -214,13 +214,13 @@ __start__: stop $(BIN_DIR)/$(GOOS)/$(PROJECT) | $(TMP_DIR) $(LOG_DIR); $(info $(
 __publish_init__:;
 __publish_binaries__: archive
 	$(info $(M) Uploading the binary packages...)
-	$Q $(foreach archive, $(wildcard $(BIN_DIR)/*.tar.gz), gh release upload v$(VERSION) $(archive) ;)
-	$Q $(foreach archive, $(wildcard $(BIN_DIR)/*.zip),    gh release upload v$(VERSION) $(archive) ;)
-	$Q $(foreach archive, $(wildcard $(BIN_DIR)/*.7z),     gh release upload v$(VERSION) $(archive) ;)
+	$Q $(foreach archive, $(wildcard $(BIN_DIR)/*$(VERSION)*.tar.gz), gh release upload v$(VERSION) $(archive) ;)
+	$Q $(foreach archive, $(wildcard $(BIN_DIR)/*$(VERSION)*.zip),    gh release upload v$(VERSION) $(archive) ;)
+	$Q $(foreach archive, $(wildcard $(BIN_DIR)/*$(VERSION)*.7z),     gh release upload v$(VERSION) $(archive) ;)
 	$(info $(M) Uploading the Debian packages...)
-	$Q $(foreach archive, $(wildcard $(BIN_DIR)/*.deb),    gh release upload v$(VERSION) $(archive) ;)
+	$Q $(foreach archive, $(wildcard $(BIN_DIR)/*$(VERSION)*.deb),    gh release upload v$(VERSION) $(archive) ;)
 	$(info $(M) Uploading the RPM packages...)
-	$Q $(foreach archive, $(wildcard $(BIN_DIR)/*.rpm),    gh release upload v$(VERSION) $(archive) ;)
+	$Q $(foreach archive, $(wildcard $(BIN_DIR)/*$(VERSION)*.rpm),    gh release upload v$(VERSION) $(archive) ;)
 
 __publish_snap__: \
 	$(TMP_DIR)/__publish_snap__ \
