@@ -1,0 +1,10 @@
+Debugger listening on ws://0.0.0.0:9229/9293f09e-444c-4229-8df2-c52f06c73133
+{"level":20,"time":1711626308910,"pid":1,"hostname":"dev-asr-gcloudcx-connector-6c7456dbd8-95vz5","topic":"server","scope":"server","msg":"✅ Application is starting","null_entity":null}
+{"level":30,"time":1711626309475,"pid":1,"hostname":"dev-asr-gcloudcx-connector-6c7456dbd8-95vz5","topic":"server","scope":"server","topic":"server","scope":"start","msg":"Fetching Tenants","remote":true}
+{"level":30,"time":1711626309506,"pid":1,"hostname":"dev-asr-gcloudcx-connector-6c7456dbd8-95vz5","topic":"server","scope":"server","topic":"server","scope":"start","msg":"Starting server...","server":"localhost","port":8443}
+{"level":30,"time":1711626309515,"pid":1,"hostname":"dev-asr-gcloudcx-connector-6c7456dbd8-95vz5","topic":"server","scope":"server","msg":"Server listening at http://0.0.0.0:8443"}
+{"level":30,"time":1711626309515,"pid":1,"hostname":"dev-asr-gcloudcx-connector-6c7456dbd8-95vz5","topic":"server","scope":"server","topic":"server","scope":"start","msg":"Routes: \n(empty tree)"}
+{"level":30,"time":1711626309505,"pid":1,"hostname":"dev-asr-gcloudcx-connector-6c7456dbd8-95vz5","topic":"server","scope":"server","topic":"server","scope":"start","bag":[],"msg":"Got an empty bag"}
+{"level":30,"time":1711626309505,"pid":1,"hostname":"dev-asr-gcloudcx-connector-6c7456dbd8-95vz5","topic":"server","scope":"server","topic":"server","scope":"start","colors":["red","green","blue"],"msg":"Checking colors"}
+{"level":30,"time":1711626309505,"pid":1,"hostname":"dev-asr-gcloudcx-connector-6c7456dbd8-95vz5","topic":"server","scope":"server","topic":"server","scope":"start","bag":[1,2,3,4,[5,6,7,[8,9]]],"msg":"Got a bag"}
+{"level":30,"time":1711626309505,"pid":1,"hostname":"dev-asr-gcloudcx-connector-6c7456dbd8-95vz5","topic":"server","scope":"server","topic":"server","scope":"start","payload":[{"id":"5fed64d8-4c4d-4024-9a97-70f93a17461c","name":"ACME Inc.","credentials":{"user":"admin","password":"REDACTED"}},{"id":"d48b6077-cc8e-4972-9f5e-b778143e014f","name":"Contoso, Inc.","scopes":["user:read","user:write"]}],"steps":[1,2,3,4],"msg":"Received Data"}
