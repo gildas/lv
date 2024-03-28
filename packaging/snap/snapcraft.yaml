@@ -1,4 +1,4 @@
-name: lv
+name: logviewer
 summary: Logviewer
 description: |
       lv is a logviewer for bunyan and pino logger.
@@ -6,7 +6,7 @@ website: https://github.com/gildas/lv
 source-code: https://github.com/gildas/lv
 issues: https://github.com/gildas/lv/issues
 license: MIT
-version: 0.1.0
+version: 0.2.0
 base: core22
 grade: stable
 confinement: strict

@@ -3,9 +3,9 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>lv</id>
-    <version>0.1.0</version>
+    <version>0.2.0</version>
     <owners>Gildas Cherruel</owners>
-    <title>lv (Install)</title>
+    <title>logviewer (Install)</title>
     <authors>Gildas Cherruel</authors>
     <projectUrl>https://github.com/gildas/lv</projectUrl>
     <packageSourceUrl>https://github.com/gildas/lv/src/master/packaging/chocolatey</packageSourceUrl>
@@ -18,7 +18,11 @@
     <summary>lv is a logviewer</summary>
     <description>lv is a logviewer for bunyan and pinojs logger.</description>
     <releaseNotes>
-- bb can display a progress bar during uploads and downloads.
+- Support for nil and boolean fields
+- log entry field with an empty array are printed in the parenthesis section
+- Fixed the additional commas and wrong indentation when printing blobs
+- Improved blobs printing
+- the task ID is now always last printed in the fields
     </releaseNotes>
   </metadata>
   <files>

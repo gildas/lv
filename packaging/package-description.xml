@@ -1,12 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component>
-	<id>bb</id>
+	<id>logviewer</id>
 	<name>lv</name>
-	<summary>lv is a logviewer</summary>
+	<summary>lv is a logviewer for JSON generated logs</summary>
 	<description>
       lv is a logviewer for bunyan and pinojs logger.
 	</description>
 	<releases>
+		<release date="2024-03-29" version="0.2.0">
+			<notes>
+				- Support for nil and boolean fields
+				- log entry field with an empty array are printed in the parenthesis section
+				- Fixed the additional commas and wrong indentation when printing blobs
+				- Improved blobs printing
+				- the task ID is now always last printed in the fields		
+			</notes>
+		</release>
 		<release date="2024-03-18" version="0.1.3"/>
 		<release date="2024-03-07" version="0.1.2"/>
 		<release date="2024-03-03" version="0.1.1"/>
