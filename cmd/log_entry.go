@@ -102,6 +102,12 @@ func (entry LogEntry) Write(context context.Context, output io.Writer, options *
 	}
 }
 
+func (entry LogEntry) writeIndent(output io.Writer, _ *OutputOptions, indent int) {
+	for i := 0; i < indent; i++ {
+		_, _ = output.Write([]byte(" "))
+	}
+}
+
 func (entry LogEntry) writeString(output io.Writer, _ *OutputOptions, value string) {
 	_, _ = output.Write([]byte(value))
 }
@@ -165,12 +171,6 @@ func (entry LogEntry) writeBlob(output io.Writer, options *OutputOptions, blob a
 		entry.writeString(output, options, "}")
 	} else {
 		entry.writeString(output, options, "!!!"+fmt.Sprintf("%v", blob))
-	}
-}
-
-func (entry LogEntry) writeIndent(output io.Writer, _ *OutputOptions, indent int) {
-	for i := 0; i < indent; i++ {
-		_, _ = output.Write([]byte(" "))
 	}
 }
 
@@ -243,6 +243,21 @@ func (entry LogEntry) writeField(output io.Writer, options *OutputOptions, field
 		entry.writeString(output, options, actual)
 	} else if actual, ok := value.(float64); ok {
 		entry.writeString(output, options, strconv.FormatFloat(actual, 'g', -1, 64))
+	} else if actual, ok := value.(bool); ok {
+		if actual {
+			entry.writeString(output, options, "true")
+		} else {
+			entry.writeString(output, options, "false")
+		}
+	} else if values, ok := value.([]any); ok {
+		entry.writeString(output, options, "[")
+		for index, item := range values {
+			if index > 0 {
+				entry.writeString(output, options, ", ")
+			}
+			entry.writeField(output, options, "", item)
+		}
+		entry.writeString(output, options, "]")
 	} else {
 		entry.writeString(output, options, fmt.Sprintf("%v", value))
 	}
@@ -320,6 +335,8 @@ func (entry *LogEntry) UnmarshalJSON(payload []byte) (err error) {
 				entry.Fields[key] = value
 			} else if _, ok := value.(bool); ok {
 				entry.Fields[key] = value
+			} else if values, ok := value.([]any); ok && len(values) == 0 {
+				entry.Fields[key] = values
 			} else {
 				entry.Blobs[key] = value
 			}
