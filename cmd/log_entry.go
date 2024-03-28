@@ -91,13 +91,15 @@ func (entry LogEntry) Write(context context.Context, output io.Writer, options *
 
 	log.Debugf("Blobs: %v", entry.Blobs)
 	if len(entry.Blobs) > 0 {
+		index := 0
 		entry.writeString(output, options, "\n")
 		for key, field := range entry.Blobs {
-			entry.writeString(output, options, "    ")
-			entry.writeString(output, options, key)
-			entry.writeString(output, options, ": ")
-			entry.writeBlob(output, options, field, 4)
-			entry.writeString(output, options, "\n")
+			if index > 0 {
+				entry.writeString(output, options, ", ")
+				entry.writeString(output, options, "\n")
+			}
+			entry.writeBlob(output, options, key, field, 4)
+			index++
 		}
 	}
 }
@@ -110,6 +112,18 @@ func (entry LogEntry) writeIndent(output io.Writer, _ *OutputOptions, indent int
 
 func (entry LogEntry) writeString(output io.Writer, _ *OutputOptions, value string) {
 	_, _ = output.Write([]byte(value))
+}
+
+func (entry LogEntry) writeBool(output io.Writer, _ *OutputOptions, value bool) {
+	if value {
+		entry.writeString(output, nil, "true")
+	} else {
+		entry.writeString(output, nil, "false")
+	}
+}
+
+func (entry LogEntry) writeFloat64(output io.Writer, _ *OutputOptions, value float64) {
+	_, _ = output.Write([]byte(strconv.FormatFloat(value, 'g', -1, 64)))
 }
 
 func (entry LogEntry) writeInt64(output io.Writer, _ *OutputOptions, value int64) {
@@ -126,50 +140,67 @@ func (entry LogEntry) writeStringWithColor(output io.Writer, options *OutputOpti
 	}
 }
 
-func (entry LogEntry) writeBlob(output io.Writer, options *OutputOptions, blob any, indent int) {
-	if value, ok := blob.(string); ok {
+func (entry LogEntry) writeBlob(output io.Writer, options *OutputOptions, name string, blob any, indent int) {
+	entry.writeIndent(output, options, indent)
+	if len(name) > 0 {
+		entry.writeString(output, options, name)
+		entry.writeString(output, options, ": ")
+	}
+	switch actual := blob.(type) {
+	case nil:
+		entry.writeString(output, options, "<null>")
+	case string:
 		entry.writeString(output, options, "\"")
-		entry.writeString(output, options, value)
+		entry.writeString(output, options, actual)
 		entry.writeString(output, options, "\"")
-	} else if value, ok := blob.(float64); ok {
-		entry.writeString(output, options, strconv.FormatFloat(value, 'g', -1, 64))
-	} else if value, ok := blob.(bool); ok {
-		if value {
-			entry.writeString(output, options, "true")
-		} else {
-			entry.writeString(output, options, "false")
+	case float64:
+		entry.writeFloat64(output, options, actual)
+	case bool:
+		entry.writeBool(output, options, actual)
+	case []any:
+		if len(actual) < 20 && areAllLiterals(actual) {
+			entry.writeString(output, options, "[")
+			for index, element := range actual {
+				if index > 0 {
+					entry.writeString(output, options, ", ")
+				}
+				entry.writeBlob(output, options, "", element, 0)
+			}
+			entry.writeString(output, options, "]")
+			break
 		}
-	} else if values, ok := blob.([]any); ok {
 		entry.writeString(output, options, "[\n")
-		entry.writeIndent(output, options, indent)
-		for index, value := range values {
+		for index, element := range actual {
 			if index > 0 {
 				entry.writeString(output, options, ", \n")
-				entry.writeIndent(output, options, indent)
 			}
-			entry.writeString(output, options, ", \n")
-			entry.writeBlob(output, options, value, indent+2)
+			entry.writeBlob(output, options, "", element, indent+2)
 		}
+		entry.writeString(output, options, "\n")
+		entry.writeIndent(output, options, indent)
 		entry.writeString(output, options, "]")
-	} else if values, ok := blob.(map[string]any); ok {
+	case map[string]any:
 		entry.writeString(output, options, "{\n")
 		index := 0
-		for key, value := range values {
-			entry.writeIndent(output, options, indent+2)
-			entry.writeString(output, options, "\"")
-			entry.writeString(output, options, key)
-			entry.writeString(output, options, "\": ")
-			entry.writeBlob(output, options, value, indent+2)
-			if index < len(values)-1 {
-				entry.writeString(output, options, ",\n")
+		for key, value := range actual {
+			if index > 0 {
+				entry.writeString(output, options, ", \n")
+			}
+			if isLiteral(value) {
+				entry.writeIndent(output, options, indent+2)
+				entry.writeString(output, options, "\"")
+				entry.writeString(output, options, key)
+				entry.writeString(output, options, "\": ")
+				entry.writeBlob(output, options, "", value, 0)
 			} else {
-				entry.writeString(output, options, "\n")
+				entry.writeBlob(output, options, "\""+key+"\"", value, indent+2)
 			}
 			index++
 		}
-		entry.writeIndent(output, options, indent-2)
+		entry.writeString(output, options, "\n")
+		entry.writeIndent(output, options, indent)
 		entry.writeString(output, options, "}")
-	} else {
+	default:
 		entry.writeString(output, options, "!!!"+fmt.Sprintf("%v", blob))
 	}
 }
@@ -237,30 +268,44 @@ func (entry LogEntry) writeTopicAndScope(output io.Writer, options *OutputOption
 func (entry LogEntry) writeField(output io.Writer, options *OutputOptions, field string, value any) {
 	entry.writeString(output, options, field)
 	entry.writeString(output, options, "=")
-	if value == nil {
+	switch actual := value.(type) {
+	case nil:
 		entry.writeString(output, options, "<null>")
-	} else if actual, ok := value.(string); ok {
+	case string:
 		entry.writeString(output, options, actual)
-	} else if actual, ok := value.(float64); ok {
-		entry.writeString(output, options, strconv.FormatFloat(actual, 'g', -1, 64))
-	} else if actual, ok := value.(bool); ok {
-		if actual {
-			entry.writeString(output, options, "true")
-		} else {
-			entry.writeString(output, options, "false")
-		}
-	} else if values, ok := value.([]any); ok {
+	case float64:
+		entry.writeFloat64(output, options, actual)
+	case bool:
+		entry.writeBool(output, options, actual)
+	case []any:
 		entry.writeString(output, options, "[")
-		for index, item := range values {
+		for index, item := range actual {
 			if index > 0 {
 				entry.writeString(output, options, ", ")
 			}
 			entry.writeField(output, options, "", item)
 		}
 		entry.writeString(output, options, "]")
-	} else {
+	default:
 		entry.writeString(output, options, fmt.Sprintf("%v", value))
 	}
+}
+
+func isLiteral(value any) bool {
+	switch value.(type) {
+	case nil, string, float64, bool:
+		return true
+	}
+	return false
+}
+
+func areAllLiterals(values []any) bool {
+	for _, value := range values {
+		if !isLiteral(value) {
+			return false
+		}
+	}
+	return true
 }
 
 // UnmarshalJSON unmarshal data into this
