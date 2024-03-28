@@ -12,6 +12,7 @@ import (
 	"github.com/gildas/go-logger"
 )
 
+// LogEntry represents a log entry
 type LogEntry struct {
 	Time     time.Time `json:"time"`
 	Level    LogLevel  `json:"level"`
@@ -26,6 +27,7 @@ type LogEntry struct {
 	Blobs    map[string]any
 }
 
+// GetField retrieves the value of a specific field from the LogEntry.
 func (entry LogEntry) GetField(name string) string {
 	if value, ok := entry.Fields[name]; ok {
 		if str, ok := value.(string); ok {
@@ -59,58 +61,14 @@ func (entry LogEntry) GetField(name string) string {
 	return ""
 }
 
+// Write writes the LogEntry to the given io.Writer output
+// The output will be filtered and formatted according to the OutputOptions
 func (entry LogEntry) Write(context context.Context, output io.Writer, options *OutputOptions) {
 	log := logger.Must(logger.FromContext(context))
-	when := entry.Time.UTC()
-	if options.Location != nil {
-		when = entry.Time.In(options.Location)
-	}
 
-	if options.Output.Value == "short" {
-		whenFormat := "15:04:05.000Z"
-		if options.Location != nil {
-			whenFormat = "15:04:05.000"
-		}
-		entry.writeString(output, options, when.Format(whenFormat))
-		entry.writeString(output, options, " ")
-		entry.Level.Write(output, options)
-		if len(entry.Name) > 0 {
-			entry.writeString(output, options, " ")
-			entry.writeString(output, options, entry.Name)
-		}
-		entry.writeString(output, options, ": ")
-	} else {
-		whenFormat := "2006-01-02T15:04:05.000"
-		if options.Location != nil {
-			whenFormat = "2006-01-02T15:04:05.000Z07:00"
-		}
-		entry.writeString(output, options, "[")
-		entry.writeString(output, options, when.Format(whenFormat))
-		entry.writeString(output, options, "] ")
-		entry.Level.Write(output, options)
-		entry.writeString(output, options, ": ")
-		if len(entry.Name) > 0 {
-			entry.writeString(output, options, entry.Name)
-		}
-		if entry.PID > 0 {
-			entry.writeString(output, options, "/")
-			entry.writeInt64(output, options, entry.PID)
-		}
-		if len(entry.Hostname) > 0 {
-			entry.writeString(output, options, " on ")
-			entry.writeString(output, options, entry.Hostname)
-			entry.writeString(output, options, ": ")
-		}
-	}
-
-	if len(entry.Topic) > 0 {
-		entry.writeStringWithColor(output, options, entry.Topic, Green)
-		if len(entry.Scope) > 0 {
-			entry.writeString(output, options, "/")
-			entry.writeStringWithColor(output, options, entry.Scope, Yellow)
-		}
-		entry.writeString(output, options, " ")
-	}
+	entry.writeHeader(output, options)
+	entry.writeString(output, options, ": ")
+	entry.writeTopicAndScope(output, options)
 	entry.writeStringWithColor(output, options, entry.Message, Cyan)
 
 	log.Debugf("Fields: %v", entry.Fields)
@@ -227,6 +185,66 @@ func (entry LogEntry) writeBlob(output io.Writer, options *OutputOptions, blob a
 func (entry LogEntry) writeIndent(output io.Writer, _ *OutputOptions, indent int) {
 	for i := 0; i < indent; i++ {
 		_, _ = output.Write([]byte(" "))
+	}
+}
+
+func (entry LogEntry) writeTimestamp(output io.Writer, options *OutputOptions) {
+	timestamp := entry.Time.UTC()
+	if options.Location != nil {
+		timestamp = entry.Time.In(options.Location)
+	}
+
+	if options.Output.Value == "short" {
+		timestampFormat := "15:04:05.000Z"
+		if options.Location != nil {
+			timestampFormat = "15:04:05.000"
+		}
+		entry.writeString(output, options, timestamp.Format(timestampFormat))
+		entry.writeString(output, options, " ")
+	} else {
+		timestampFormat := "2006-01-02T15:04:05.000"
+		if options.Location != nil {
+			timestampFormat = "2006-01-02T15:04:05.000Z07:00"
+		}
+		entry.writeString(output, options, "[")
+		entry.writeString(output, options, timestamp.Format(timestampFormat))
+		entry.writeString(output, options, "] ")
+	}
+}
+
+func (entry LogEntry) writeHeader(output io.Writer, options *OutputOptions) {
+	entry.writeTimestamp(output, options)
+	entry.Level.Write(output, options)
+
+	if options.Output.Value == "short" {
+		if len(entry.Name) > 0 {
+			entry.writeString(output, options, " ")
+			entry.writeString(output, options, entry.Name)
+		}
+	} else {
+		entry.writeString(output, options, ": ")
+		if len(entry.Name) > 0 {
+			entry.writeString(output, options, entry.Name)
+		}
+		if entry.PID > 0 {
+			entry.writeString(output, options, "/")
+			entry.writeInt64(output, options, entry.PID)
+		}
+		if len(entry.Hostname) > 0 {
+			entry.writeString(output, options, " on ")
+			entry.writeString(output, options, entry.Hostname)
+		}
+	}
+}
+
+func (entry LogEntry) writeTopicAndScope(output io.Writer, options *OutputOptions) {
+	if len(entry.Topic) > 0 {
+		entry.writeStringWithColor(output, options, entry.Topic, Green)
+		if len(entry.Scope) > 0 {
+			entry.writeString(output, options, "/")
+			entry.writeStringWithColor(output, options, entry.Scope, Yellow)
+		}
+		entry.writeString(output, options, " ")
 	}
 }
 
