@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gildas/go-errors"
 	"github.com/gildas/go-flags"
 	"github.com/gildas/go-logger"
 	"github.com/spf13/cobra"
@@ -124,7 +125,7 @@ func initConfig() {
 func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 	// Here we should read from stdin or from the files
 	log := logger.Must(logger.FromContext(cmd.Context()))
-	var scanner *bufio.Scanner
+	var reader *bufio.Reader
 
 	if cmd.Flags().Changed("completion") {
 		return generateCompletion(cmd, CmdOptions.Completion.Value)
@@ -153,7 +154,7 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 	log.Infof("Displaying time at location: %s", CmdOptions.Location)
 
 	if len(args) == 0 {
-		scanner = bufio.NewScanner(os.Stdin)
+		reader = bufio.NewReader(os.Stdin)
 	} else {
 		file, err := os.Open(args[0])
 		if err != nil {
@@ -161,7 +162,7 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 			return err
 		}
 		defer file.Close()
-		scanner = bufio.NewScanner(file)
+		reader = bufio.NewReader(file)
 	}
 
 	var outstream io.WriteCloser = os.Stdout
@@ -194,23 +195,35 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 	}
 	var filter LogFilter = filters.AsFilter()
 
-	for scanner.Scan() {
-		output := strings.Builder{}
-		line := scanner.Bytes()
+	for {
+		var line []byte
+
+		line, err = ReadLine(reader)
+		if err != nil {
+			break
+		}
+
+		if len(line) == 0 {
+			continue
+		}
+		log.Infof(string(line))
 		var entry LogEntry
 
-		log.Infof(scanner.Text())
 		if err := json.Unmarshal(line, &entry); err != nil {
 			log.Errorf("Failed to parse JSON: %s", err)
 			fmt.Fprintln(outstream, string(line))
 			continue
 		}
 		if filter.Filter(cmd.Context(), entry) {
+			output := strings.Builder{}
+
 			entry.Write(cmd.Context(), &output, &CmdOptions.OutputOptions)
-			fmt.Fprintln(outstream, output.String())
+			if output.Len() > 0 {
+				fmt.Fprintln(outstream, output.String())
+			}
 		}
 	}
-	if err := scanner.Err(); err != nil {
+	if err != nil && !errors.Is(err, io.EOF) {
 		log.Fatalf("Failed to read from input", err)
 		return err
 	}

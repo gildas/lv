@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"os"
@@ -69,4 +70,20 @@ func GetPager(context context.Context) (output io.WriteCloser, close func(), err
 		log.Infof("Pager done")
 	}
 	return output, close, nil
+}
+
+// ReadLine reads a line from the io.Reader
+func ReadLine(reader io.Reader) (line []byte, err error) {
+	var buffer bytes.Buffer
+	var b = make([]byte, 1)
+	for {
+		_, err = reader.Read(b)
+		if err != nil {
+			return buffer.Bytes(), err
+		}
+		if b[0] == '\n' {
+			return buffer.Bytes(), nil
+		}
+		_ = buffer.WriteByte(b[0])
+	}
 }
