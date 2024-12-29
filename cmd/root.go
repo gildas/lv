@@ -208,7 +208,7 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 		if len(line) == 0 {
 			continue
 		}
-		log.Infof(string(line))
+		log.Infof("%s", string(line))
 		var entry LogEntry
 
 		if err := json.Unmarshal(line, &entry); err != nil {
