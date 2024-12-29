@@ -72,8 +72,8 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&CmdOptions.LogDestination, "log", "", "where logs are writen if given (by default, no log is generated)")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.Debug, "debug", false, "forces logging at DEBUG level")
 	RootCmd.PersistentFlags().BoolVarP(&CmdOptions.Verbose, "verbose", "v", false, "runs verbosely if set")
-	_ = RootCmd.RegisterFlagCompletionFunc("output", CmdOptions.Output.CompletionFunc("output"))
-	_ = RootCmd.RegisterFlagCompletionFunc("completion", CmdOptions.Completion.CompletionFunc("completion"))
+	_ = RootCmd.RegisterFlagCompletionFunc(CmdOptions.Output.CompletionFunc("output"))
+	_ = RootCmd.RegisterFlagCompletionFunc(CmdOptions.Completion.CompletionFunc("completion"))
 
 	RootCmd.SilenceUsage = true
 	cobra.OnInitialize(initConfig)
@@ -90,7 +90,7 @@ func initConfig() {
 		log.SetFilterLevel(logger.DEBUG)
 	}
 
-	log.Infof(strings.Repeat("-", 80))
+	log.Infof("%s", strings.Repeat("-", 80))
 	log.Infof("Starting %s v%s (%s)", RootCmd.Name(), RootCmd.Version, runtime.GOARCH)
 	log.Infof("Log Destination: %s", log)
 
@@ -108,7 +108,7 @@ func initConfig() {
 	}
 
 	viper.SetEnvPrefix("LOGVIEWER")
-	viper.BindEnv("local")
+	_ = viper.BindEnv("local")
 	viper.AutomaticEnv() // read in environment variables that match
 
 	err := viper.ReadInConfig()
