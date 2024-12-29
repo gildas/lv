@@ -42,8 +42,8 @@ var CmdOptions struct {
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
-	Short: "pretty-print Bunyan logs from stdin or file(s)",
-	Long:  "Bunyan is a simple and fast JSON log viewer. It reads log entries from given files or stdin and pretty-prints them to stdout.",
+	Short: "pretty-print logviewer logs from stdin or file(s)",
+	Long:  "logviewer is a simple and fast JSON log viewer. It reads log entries from given files or stdin and pretty-prints them to stdout.",
 	RunE:  runRootCommand,
 }
 
@@ -56,10 +56,10 @@ func init() {
 	configDir, err := os.UserConfigDir()
 	cobra.CheckErr(err)
 
-	CmdOptions.Output = flags.NewEnumFlag("+long", "bunyan", "short", "simple", "html", "serve", "server")
+	CmdOptions.Output = flags.NewEnumFlag("+long", "logviewer", "short", "simple", "html", "serve", "server")
 	CmdOptions.Completion = flags.NewEnumFlag("bash", "zsh", "fish", "powershell", "help")
 	RootCmd.PersistentFlags().Var(CmdOptions.Completion, "completion", "Generates completion script for bash, zsh, fish, or powershell")
-	RootCmd.PersistentFlags().StringVar(&CmdOptions.ConfigFile, "config", "", fmt.Sprintf("config file (default is %s)", filepath.Join(configDir, "bunyan", "config.yaml")))
+	RootCmd.PersistentFlags().StringVar(&CmdOptions.ConfigFile, "config", "", fmt.Sprintf("config file (default is %s)", filepath.Join(configDir, "logviewer", "config.yaml")))
 	RootCmd.PersistentFlags().StringVar(&CmdOptions.LogLevel, "level", "", "Only shows log entries with a level at or above the given value.")
 	RootCmd.PersistentFlags().StringVarP(&CmdOptions.Filter, "filter", "f", "", "Run each log message through the filter.")
 	RootCmd.PersistentFlags().StringVarP(&CmdOptions.Filter, "condition", "c", "", "Run each log message through the filter.")
@@ -68,7 +68,7 @@ func init() {
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UsePager, "no-pager", true, "Do not pipe output into a pager. By default, the output is piped throug `less` (or $PAGER if set), if stdout is a TTY")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UseColors, "no-color", false, "Do not colorize output. By default, the output is colorized if stdout is a TTY")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UseColors, "color", true, "Colorize output always, even if the output stream is not a TTY.")
-	RootCmd.PersistentFlags().VarP(CmdOptions.Output, "output", "o", "output mode/format. One of long, json, json-N, bunyan, inspect, short, simple, html, serve, server")
+	RootCmd.PersistentFlags().VarP(CmdOptions.Output, "output", "o", "output mode/format. One of long, json, json-N, logviewer, inspect, short, simple, html, serve, server")
 	RootCmd.PersistentFlags().StringVar(&CmdOptions.LogDestination, "log", "", "where logs are writen if given (by default, no log is generated)")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.Debug, "debug", false, "forces logging at DEBUG level")
 	RootCmd.PersistentFlags().BoolVarP(&CmdOptions.Verbose, "verbose", "v", false, "runs verbosely if set")
@@ -98,13 +98,13 @@ func initConfig() {
 	if len(CmdOptions.ConfigFile) > 0 { // Use config file from the flag.
 		viper.SetConfigFile(CmdOptions.ConfigFile)
 	} else if configDir, _ := os.UserConfigDir(); len(configDir) > 0 {
-		viper.AddConfigPath(filepath.Join(configDir, "bunyan"))
+		viper.AddConfigPath(filepath.Join(configDir, "logviewer"))
 		viper.SetConfigName("config.yaml")
 	} else { // Old fashion way
 		homeDir, err := os.UserHomeDir()
 		cobra.CheckErr(err)
 		viper.AddConfigPath(homeDir)
-		viper.SetConfigName(".bunyan")
+		viper.SetConfigName(".logviewer")
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
