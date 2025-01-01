@@ -98,6 +98,30 @@ Here is a list of the flags you can use with `lv`:
       --version            version for lv
 ```
 
+### Environment Variables
+
+`lv` uses the following environment variables:
+
+- `LOGVIEWER_COLOR` to force colorization of the output
+- `LOGVIEWER_LOCAL` to display the time in local time
+- `LOGVIEWER_TIMEZONE` to display the time in a specific timezone
+
+The command line flags have precedence over the environment variables.
+
+### Configuration file
+
+You can also configure `lv` with a configuration file. The configuration file is a YAML file called `config.yaml` and should be stored in the subfolder `logviewer` of [os.UserConfigDir](https://pkg.go.dev/os#UserConfigDir).
+
+Here is an example of a configuration file:
+
+```yaml
+color: true
+local: true
+output: short
+```
+
+The environment variables and the command line flags have precedence over the configuration file.
+
 ### Completion
 
 `lv` supports shell completion for `bash`, `fish`, `PowerShell`, and `zsh`.
