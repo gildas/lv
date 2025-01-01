@@ -33,7 +33,6 @@ var CmdOptions struct {
 	Completion     *flags.EnumFlag
 	ConfigFile     string
 	LogDestination string
-	LocalTime      bool
 	Timezone       string
 	UsePager       bool
 	Verbose        bool
@@ -63,7 +62,7 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&CmdOptions.LogLevel, "level", "", "Only shows log entries with a level at or above the given value.")
 	RootCmd.PersistentFlags().StringVarP(&CmdOptions.Filter, "filter", "f", "", "Run each log message through the filter.")
 	RootCmd.PersistentFlags().StringVarP(&CmdOptions.Filter, "condition", "c", "", "Run each log message through the filter.")
-	RootCmd.PersistentFlags().BoolVarP(&CmdOptions.LocalTime, "local", "L", false, "Display time field in local time, rather than UTC.")
+	RootCmd.PersistentFlags().BoolP("local", "L", false, "Display time field in local time, rather than UTC.")
 	RootCmd.PersistentFlags().StringVar(&CmdOptions.Timezone, "time", "", "Display time field in the given timezone.")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UsePager, "no-pager", true, "Do not pipe output into a pager. By default, the output is piped throug `less` (or $PAGER if set), if stdout is a TTY")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UseColors, "no-color", false, "Do not colorize output. By default, the output is colorized if stdout is a TTY")
@@ -76,6 +75,15 @@ func init() {
 	_ = RootCmd.RegisterFlagCompletionFunc(CmdOptions.Completion.CompletionFunc("completion"))
 
 	RootCmd.SilenceUsage = true
+	_ = viper.BindPFlag("local", RootCmd.PersistentFlags().Lookup("local"))
+	_ = viper.BindPFlag("timezone", RootCmd.PersistentFlags().Lookup("time"))
+	_ = viper.BindPFlag("output", RootCmd.PersistentFlags().Lookup("output"))
+	_ = viper.BindPFlag("color", RootCmd.PersistentFlags().Lookup("color"))
+	viper.SetDefault("local", false)
+	viper.SetDefault("timezone", "UTC")
+	viper.SetDefault("output", "long")
+	viper.SetDefault("color", true)
+
 	cobra.OnInitialize(initConfig)
 }
 
@@ -88,6 +96,7 @@ func initConfig() {
 	}
 	if CmdOptions.Debug {
 		log.SetFilterLevel(logger.DEBUG)
+		log.Infof("Debug was turned on by the --debug flag")
 	}
 
 	log.Infof("%s", strings.Repeat("-", 80))
@@ -133,24 +142,21 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 		return generateCompletion(cmd, CmdOptions.Completion.Value)
 	}
 
-	CmdOptions.UseColors = isStdoutTTY()
+	CmdOptions.UseColors = isStdoutTTY() || viper.GetBool("color") || cmd.Flags().Changed("color")
 	if cmd.Flags().Changed("no-color") {
 		CmdOptions.UseColors = false
 	}
-	if cmd.Flags().Changed("color") {
-		CmdOptions.UseColors = true
-	}
-
 	CmdOptions.UsePager = isStdoutTTY() && isStdinTTY()
 	if cmd.Flags().Changed("no-pager") {
 		CmdOptions.UsePager = false
 	}
+	CmdOptions.Output.Value = viper.GetString("output")
 
-	if CmdOptions.LocalTime {
+	if viper.GetBool("local") {
 		log.Infof("Displaying local time")
 		CmdOptions.Location = time.Local
-	} else if CmdOptions.Location, err = ParseLocation(CmdOptions.Timezone); err != nil {
-		log.Fatalf("Failed to load timezone %s: %s", CmdOptions.Timezone, err)
+	} else if CmdOptions.Location, err = ParseLocation(viper.GetString("timezone")); err != nil {
+		log.Fatalf("Failed to load timezone %s: %s", viper.GetString("timezone"), err)
 		return err
 	}
 	log.Infof("Displaying time at location: %s", CmdOptions.Location)
