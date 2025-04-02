@@ -196,3 +196,4 @@ Not all the output formats are implemented yet.
 
 - Add support to read logs from `aws`, `gcp` and `azure` services.
 - Add support for `k8s` logs.
+
