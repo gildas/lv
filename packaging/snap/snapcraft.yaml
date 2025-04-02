@@ -1,4 +1,4 @@
-name: logviewer
+name: bunyan-logviewer
 summary: Logviewer
 description: |
       lv is a logviewer for bunyan and pino logger.
