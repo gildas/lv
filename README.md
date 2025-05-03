@@ -14,6 +14,15 @@ If you use [Homebrew](https://brew.sh), you can install `lv` with:
 brew install gildas/tap/lv
 ```
 
+You can also install the application with snap:
+
+```bash
+sudo snap install bunyan-logviewer
+sudo snap alias bunyan-logviewer lv
+```
+
+[![Get it from the Snap Store](https://snapcraft.io/static/images/badges/en/snap-store-black.svg)](https://snapcraft.io/bunyan-logviewer)
+
 ### macOS
 
 You can get `lv` from [Homebrew](https://brew.sh) with:
