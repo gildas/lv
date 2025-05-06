@@ -361,7 +361,7 @@ func (entry *LogEntry) UnmarshalJSON(payload []byte) (err error) {
 			} else {
 				entry.TaskID = int64(number)
 			}
-		case "time":
+		case "time", "timestamp":
 			if number, ok := value.(float64); ok {
 				entry.Time = time.UnixMilli(int64(number))
 			} else if tvalue, ok := value.(string); !ok {
