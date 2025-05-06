@@ -208,6 +208,9 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 
 		line, err = ReadLine(reader)
 		if err != nil {
+			if !errors.Is(err, io.EOF) {
+				log.Errorf("Failed to read line: %s", err)
+			}
 			break
 		}
 
