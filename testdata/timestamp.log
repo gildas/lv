@@ -1,0 +1,7 @@
+{"level":"debug","timestamp":"2025-04-11T08:04:39.544Z","pid":1,"hostname":"helloworld-5d959759bb-6b798","topic":"server","scope":"main","service":"helloworld","msg":"Initializing worker pool"}
+{"level":"debug","timestamp":"2025-04-11T08:04:39.564Z","pid":1,"hostname":"helloworld-5d959759bb-6b798","topic":"server","scope":"main","service":"helloworld","msg":"Calculated optimal worker pool size: 1 (from 2 CPUs)"}
+{"level":"debug","timestamp":"2025-04-11T08:04:39.564Z","pid":1,"hostname":"helloworld-5d959759bb-6b798","topic":"server","scope":"workerPool","service":"helloworld","workerId":1,"msg":"Creating new worker"}
+{"level":"info", "timestamp":"2025-04-11T08:04:39.566Z","pid":1,"hostname":"helloworld-5d959759bb-6b798","topic":"server","scope":"workerPool","service":"helloworld","workers":1,"throttleRate":50,"maxQueueSize":10000,"msg":"Worker pool initialized"}
+{"level":"debug","timestamp":"2025-04-11T08:04:40.654Z","pid":1,"hostname":"helloworld-5d959759bb-6b798","topic":"server","scope":"workerPool","service":"helloworld","msg":"Starting task scheduler"}
+{"level":"info", "timestamp":"2025-04-11T08:04:40.988Z","pid":1,"hostname":"helloworld-5d959759bb-6b798","topic":"server","scope":"main","service":"helloworld","msg":"Worker pool successfully started"}
+{"level":"info", "timestamp":"2025-04-11T08:04:41.256Z","pid":1,"hostname":"helloworld-5d959759bb-6b798","topic":"server","scope":"start","service":"helloworld","msg":"Starting server..."}

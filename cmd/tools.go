@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"os"
 	"os/exec"
@@ -76,8 +77,15 @@ func GetPager(context context.Context) (output io.WriteCloser, close func(), err
 func ReadLine(reader io.Reader) (line []byte, err error) {
 	var buffer bytes.Buffer
 	var b = make([]byte, 1)
+
 	for {
 		_, err = reader.Read(b)
+		if errors.Is(err, io.EOF) {
+			if buffer.Len() == 0 {
+				return buffer.Bytes(), io.EOF
+			}
+			return buffer.Bytes(), nil
+		}
 		if err != nil {
 			return buffer.Bytes(), err
 		}
