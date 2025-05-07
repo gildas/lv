@@ -31,6 +31,21 @@ You can get `lv` from [Homebrew](https://brew.sh) with:
 brew install gildas/tap/lv
 ```
 
+### Windows
+
+You can (soon) install `lv` with [chocolatey](https://chocolatey.org):
+
+```bash
+choco install bunyan-logviewer
+```
+
+You can also install `lv` with [scoop](https://scoop.sh):
+
+```bash
+scoop bucket add gildas https://github.com/gildas/scoop-bucket
+scoop install lv
+```
+
 ### Binaries
 
 You can download the latest version of `lv` from the [releases page](https://github.com/gildas/lv/releases).

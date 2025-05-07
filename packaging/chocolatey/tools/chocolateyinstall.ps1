@@ -5,9 +5,9 @@ $packageArgs = @{
   packageName   = $env:ChocolateyPackageName
   unzipLocation = $toolsDir
   fileType      = 'exe'
-  file64        = "$toolsDir\bunyan-logviewer-0.3.0-windows-amd64.7z"
+  file64        = "$toolsDir\bunyan-logviewer-0.3.1-windows-amd64.7z"
   softwareName  = 'lv*'
-  checksum64    = '6d80479623d3c2b578558e4f1bec896fe4f8fac1205e2e7cfe2b0d267f09ecac'
+  checksum64    = '7f6ad4a411b75087157a2d05e23d816afccd48a5b726683077c7244c652d3ee1'
   checksumType64= 'sha256'
 }
 
