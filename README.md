@@ -33,17 +33,17 @@ brew install gildas/tap/lv
 
 ### Windows
 
-You can install `lv` with [scoop](https://scoop.sh):
+You can (soon) install `lv` with [chocolatey](https://chocolatey.org):
+
+```bash
+choco install bunyan-logviewer
+```
+
+You can also install `lv` with [scoop](https://scoop.sh):
 
 ```bash
 scoop bucket add gildas https://github.com/gildas/scoop-bucket
 scoop install lv
-```
-
-You can also install `lv` with [chocolatey](https://chocolatey.org):
-
-```bash
-choco install bunyan-logviewer
 ```
 
 ### Binaries
