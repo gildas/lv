@@ -14,7 +14,7 @@ func main() {
 	if len(os.Getenv("LOG_DESTINATION")) == 0 {
 		os.Setenv("LOG_DESTINATION", "nil")
 	}
-	log := logger.Create(APP)
+	log := logger.Create(APP, logger.EnvironmentPrefix("LV_"))
 	defer log.Flush()
 	cmd.RootCmd.Use = APP + " [falgs] <file>"
 	cmd.RootCmd.Version = Version()
