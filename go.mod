@@ -8,7 +8,7 @@ require (
 	github.com/gildas/go-core v0.6.1
 	github.com/gildas/go-errors v0.4.0
 	github.com/gildas/go-flags v0.4.0
-	github.com/gildas/go-logger v1.7.7
+	github.com/gildas/go-logger v1.8.0
 	github.com/joho/godotenv v1.5.1
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
@@ -53,7 +53,7 @@ require (
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.25.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
-	google.golang.org/api v0.231.0 // indirect
+	google.golang.org/api v0.232.0 // indirect
 	google.golang.org/genproto v0.0.0-20250505200425-f936aa4a68b2 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250505200425-f936aa4a68b2 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250505200425-f936aa4a68b2 // indirect
