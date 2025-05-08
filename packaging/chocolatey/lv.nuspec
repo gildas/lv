@@ -3,7 +3,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>bunyan-logviewer</id>
-    <version>0.3.1</version>
+    <version>0.3.2</version>
     <owners>Gildas Cherruel</owners>
     <title>logviewer (Install)</title>
     <authors>Gildas Cherruel</authors>
@@ -18,8 +18,7 @@
     <summary>lv is a logviewer</summary>
     <description>lv is a logviewer for bunyan and pinojs logger.</description>
     <releaseNotes>
-- Allow timestamp to be in the log entry for the time field
-- process last line without a \n properly
+- Use LV_ as a prefix for environment variables
     </releaseNotes>
   </metadata>
   <files>
