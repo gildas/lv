@@ -214,7 +214,7 @@ Not all the output formats are implemented yet.
 
 ## Troubleshooting
 
-`lv` uses [go-logger](https://github.com/gildas/go-logger) to write its own logs. You can enable the logs with the `--log` flag. By default `lv` does not log anything.
+`lv` uses [go-logger](https://github.com/gildas/go-logger) to write its own logs. You can enable the logs with the `--log` flag. By default `lv` does not log anything. `lv` will read the [go-logger](https://github.com/gildas/go-logger) environment variables with the prefix `LV_` (For example `LV_LOG_LEVEL`).
 
 ## TODO
 
