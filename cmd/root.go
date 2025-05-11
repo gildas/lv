@@ -117,7 +117,7 @@ func initConfig() {
 		viper.SetConfigName(".logviewer")
 	}
 
-	viper.SetEnvPrefix("LOGVIEWER")
+	viper.SetEnvPrefix("LV_")
 	_ = viper.BindEnv("local")
 	viper.AutomaticEnv() // read in environment variables that match
 
