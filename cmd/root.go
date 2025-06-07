@@ -94,14 +94,15 @@ func initConfig() {
 	if len(CmdOptions.LogDestination) > 0 {
 		log.ResetDestinations(CmdOptions.LogDestination)
 	}
-	if CmdOptions.Debug {
-		log.SetFilterLevel(logger.DEBUG)
-		log.Infof("Debug was turned on by the --debug flag")
-	}
 
 	log.Infof("%s", strings.Repeat("-", 80))
 	log.Infof("Starting %s v%s (%s)", RootCmd.Name(), RootCmd.Version, runtime.GOARCH)
 	log.Infof("Log Destination: %s", log)
+
+	if CmdOptions.Debug {
+		log.SetFilterLevel(logger.DEBUG)
+		log.Infof("Debug was turned on by the --debug flag")
+	}
 
 	viper.SetConfigType("yaml")
 	if len(CmdOptions.ConfigFile) > 0 { // Use config file from the flag.
@@ -116,7 +117,7 @@ func initConfig() {
 		viper.SetConfigName(".logviewer")
 	}
 
-	viper.SetEnvPrefix("LOGVIEWER")
+	viper.SetEnvPrefix("LV_")
 	_ = viper.BindEnv("local")
 	viper.AutomaticEnv() // read in environment variables that match
 
