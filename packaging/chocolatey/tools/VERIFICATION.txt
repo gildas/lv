@@ -4,3 +4,18 @@ Verification is intended to assist the Chocolatey moderators and community
 in verifying that this package's contents are trustworthy.
 
 I, Gildas Cherruel, am the author of this package that lives on https://github.com/gildas/lv
+
+The Package can ve verified by checking the following:
+
+1. Go to:
+  v0.3.2: https://github.com/gildas/lv/releases/download/v0.3.0/bunyan-logviewer-0.3.2-windows-amd64.7z
+
+  to download the application binary.
+
+2. You can verify the integrity of the downloaded file by checking its SHA256 hash:
+
+  d06458c5fde69e8f6d5ff312b834705b284b12f782e7fd479b8840ac91bae776
+
+  with the PowerShell function `Get-FileHash` or the Chocolatey `checksum.exe` utility.
+
+3. Finally, all commits are signed with my GPG key, which is available on my GitHub profile.

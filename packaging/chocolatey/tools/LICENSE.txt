@@ -1,6 +1,6 @@
 ﻿
 
-From: https://github.com/gildas/lv/src/master/LICENSE
+From: https://github.com/gildas/lv/blob/master/LICENSE
 
 LICENSE
 
