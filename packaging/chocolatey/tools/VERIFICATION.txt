@@ -8,7 +8,7 @@ I, Gildas Cherruel, am the author of this package that lives on https://github.c
 The Package can ve verified by checking the following:
 
 1. Go to:
-  v0.3.2: https://github.com/gildas/lv/releases/download/v0.3.0/bunyan-logviewer-0.3.2-windows-amd64.7z
+  v0.3.3: https://github.com/gildas/lv/releases/download/v0.3.3/bunyan-logviewer-0.3.3-windows-amd64.7z
 
   to download the application binary.
 
