@@ -4,15 +4,15 @@
   <metadata>
     <id>bunyan-logviewer</id>
     <version>0.3.3</version>
-    <owners>Gildas Cherruel</owners>
+    <owners>bzh_nihon</owners>
     <title>logviewer (Install)</title>
     <authors>Gildas Cherruel</authors>
     <projectUrl>https://github.com/gildas/lv</projectUrl>
-    <packageSourceUrl>https://github.com/gildas/lv/src/master/packaging/chocolatey</packageSourceUrl>
-    <licenseUrl>https://github.com/gildas/lv/src/master/LICENSE</licenseUrl>
+    <packageSourceUrl>https://github.com/gildas/lv/tree/master/packaging/chocolatey</packageSourceUrl>
+    <licenseUrl>https://github.com/gildas/lv/blob/master/LICENSE</licenseUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <projectSourceUrl>https://github.com/gildas/lv/src/master</projectSourceUrl>
-    <docsUrl>https://github.com/gildas/lv/src/master/README.md</docsUrl>
+    <projectSourceUrl>https://github.com/gildas/lv</projectSourceUrl>
+    <docsUrl>https://github.com/gildas/lv/blob/master/README.md</docsUrl>
     <bugTrackerUrl>https://github.com/gildas/lv/issues</bugTrackerUrl>
     <tags>log logviewer bunyan pinojs go-logger</tags>
     <summary>lv is a logviewer</summary>
