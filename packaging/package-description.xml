@@ -7,8 +7,9 @@
       lv is a logviewer for bunyan and pinojs logger.
 	</description>
 	<releases>
-		<release date="2025-01-01" version="0.3.2"/>
-		<release date="2025-01-01" version="0.3.1"/>
+		<release date="2025-08-20" version="0.3.3"/>
+		<release date="2025-05-08" version="0.3.2"/>
+		<release date="2025-05-06" version="0.3.1"/>
 		<release date="2025-01-01" version="0.3.0"/>
 		<release date="2024-04-25" version="0.2.1"/>
 		<release date="2024-03-29" version="0.2.0">
