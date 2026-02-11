@@ -63,7 +63,7 @@ func GetPager(context context.Context) (output io.WriteCloser, close func(), err
 	log.Debugf("Pager started")
 	close = func() {
 		log.Debugf("Waiting for pager %s", location)
-		output.Close()
+		_ = output.Close()
 		if err = pager.Wait(); err != nil {
 			log.Fatalf("Failed to wait for pager %s", location, err)
 			return
