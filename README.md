@@ -123,6 +123,8 @@ Here is a list of the flags you can use with `lv`:
       --version            version for lv
 ```
 
+The key must be 16, 24, or 32 bytes long.
+
 ### Environment Variables
 
 `lv` uses the following environment variables:
