@@ -33,7 +33,7 @@ brew install gildas/tap/lv
 
 ### Windows
 
-You can (soon) install `lv` with [chocolatey](https://chocolatey.org):
+You can install `lv` with [chocolatey](https://chocolatey.org):
 
 ```bash
 choco install bunyan-logviewer
@@ -111,6 +111,7 @@ Here is a list of the flags you can use with `lv`:
   -f, --filter string      Run each log message through the filter.
   -h, --help               help for lv
       --level string       Only shows log entries with a level at or above the given value.
+  -k, --key string         Use the given key to decrypt obfuscated log entries.
   -L, --local              Display time field in local time, rather than UTC.
       --log string         where lv's logs are writen if given (by default, no log is generated)
       --no-color           Do not colorize output. By default, the output is colorized if stdout is a TTY
