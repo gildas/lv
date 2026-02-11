@@ -43,6 +43,9 @@ dist/
 # JetBrains IDE
 .idea/
 
+# VS Code
+.vscode/
+
 # Unit test reports
 TEST*.xml
 
@@ -65,3 +68,6 @@ Thumbs.db
 *.mov
 *.wmv
 
+
+# Snyk Security Extension - AI Rules (auto-generated)
+.github/instructions/snyk_rules.instructions.md

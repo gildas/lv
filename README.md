@@ -33,7 +33,7 @@ brew install gildas/tap/lv
 
 ### Windows
 
-You can (soon) install `lv` with [chocolatey](https://chocolatey.org):
+You can install `lv` with [chocolatey](https://chocolatey.org):
 
 ```bash
 choco install bunyan-logviewer
@@ -111,6 +111,7 @@ Here is a list of the flags you can use with `lv`:
   -f, --filter string      Run each log message through the filter.
   -h, --help               help for lv
       --level string       Only shows log entries with a level at or above the given value.
+  -k, --key string         Use the given key to decrypt obfuscated log entries.
   -L, --local              Display time field in local time, rather than UTC.
       --log string         where lv's logs are writen if given (by default, no log is generated)
       --no-color           Do not colorize output. By default, the output is colorized if stdout is a TTY
@@ -122,13 +123,16 @@ Here is a list of the flags you can use with `lv`:
       --version            version for lv
 ```
 
+The key must be 16, 24, or 32 bytes long.
+
 ### Environment Variables
 
 `lv` uses the following environment variables:
 
-- `LOGVIEWER_COLOR` to force colorization of the output
-- `LOGVIEWER_LOCAL` to display the time in local time
-- `LOGVIEWER_TIMEZONE` to display the time in a specific timezone
+- `LV_COLOR` to force colorization of the output
+- `LV_LOCAL` to display the time in local time
+- `LV_TIMEZONE` to display the time in a specific timezone
+- `LV_OBFUSCATIONKEY` to specify the key used to decrypt obfuscated log entries
 
 The command line flags have precedence over the environment variables.
 
@@ -142,6 +146,7 @@ Here is an example of a configuration file:
 color: true
 local: true
 output: short
+obfuscationKey: 1231213
 ```
 
 The environment variables and the command line flags have precedence over the configuration file.

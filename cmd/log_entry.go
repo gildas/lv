@@ -69,7 +69,11 @@ func (entry LogEntry) Write(context context.Context, output io.Writer, options *
 	entry.writeHeader(output, options)
 	entry.writeString(output, options, ": ")
 	entry.writeTopicAndScope(output, options)
-	entry.writeStringWithColor(output, options, entry.Message, Cyan)
+	message, err := log.Unobfuscate(entry.Message)
+	if err != nil {
+		log.Errorf("Failed to Unobfuscate message (%s)", entry.Message, err)
+	}
+	entry.writeStringWithColor(output, options, message, Cyan)
 
 	log.Debugf("Fields: %v", entry.Fields)
 	entry.writeString(output, options, " (")

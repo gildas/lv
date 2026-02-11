@@ -3,6 +3,7 @@ package cmd
 import (
 	"bufio"
 	"context"
+	"crypto/aes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -32,6 +33,7 @@ var CmdOptions struct {
 	OutputOptions
 	Completion     *flags.EnumFlag
 	ConfigFile     string
+	CipherKey      string
 	LogDestination string
 	Timezone       string
 	UsePager       bool
@@ -62,6 +64,7 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&CmdOptions.LogLevel, "level", "", "Only shows log entries with a level at or above the given value.")
 	RootCmd.PersistentFlags().StringVarP(&CmdOptions.Filter, "filter", "f", "", "Run each log message through the filter.")
 	RootCmd.PersistentFlags().StringVarP(&CmdOptions.Filter, "condition", "c", "", "Run each log message through the filter.")
+	RootCmd.PersistentFlags().StringVarP(&CmdOptions.CipherKey, "key", "k", "", "Use the given key to decrypt obfuscated log entries. The key must be 16, 24, or 32 bytes long.")
 	RootCmd.PersistentFlags().BoolP("local", "L", false, "Display time field in local time, rather than UTC.")
 	RootCmd.PersistentFlags().StringVar(&CmdOptions.Timezone, "time", "", "Display time field in the given timezone.")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UsePager, "no-pager", true, "Do not pipe output into a pager. By default, the output is piped throug `less` (or $PAGER if set), if stdout is a TTY")
@@ -79,6 +82,7 @@ func init() {
 	_ = viper.BindPFlag("timezone", RootCmd.PersistentFlags().Lookup("time"))
 	_ = viper.BindPFlag("output", RootCmd.PersistentFlags().Lookup("output"))
 	_ = viper.BindPFlag("color", RootCmd.PersistentFlags().Lookup("color"))
+	_ = viper.BindPFlag("obfuscationKey", RootCmd.PersistentFlags().Lookup("key"))
 	viper.SetDefault("local", false)
 	viper.SetDefault("timezone", "UTC")
 	viper.SetDefault("output", "long")
@@ -117,8 +121,8 @@ func initConfig() {
 		viper.SetConfigName(".logviewer")
 	}
 
-	viper.SetEnvPrefix("LV_")
-	_ = viper.BindEnv("local")
+	viper.SetEnvPrefix("LV")
+	_ = viper.BindEnv("local", "obfuscationKey")
 	viper.AutomaticEnv() // read in environment variables that match
 
 	err := viper.ReadInConfig()
@@ -153,6 +157,15 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 	}
 	CmdOptions.Output.Value = viper.GetString("output")
 
+	if len(viper.GetString("obfuscationKey")) > 0 {
+		cipherBlock, err := aes.NewCipher([]byte(viper.GetString("obfuscationKey")))
+		if err != nil {
+			log.Fatalf("Failed to create cipher block: %s", err)
+			return err
+		}
+		log.SetObfuscationKey(cipherBlock)
+	}
+
 	if viper.GetBool("local") {
 		log.Infof("Displaying local time")
 		CmdOptions.Location = time.Local
@@ -170,7 +183,7 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 			log.Fatalf("Failed to open file %s: %s", args[0], err)
 			return err
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 		reader = bufio.NewReader(file)
 	}
 
@@ -202,7 +215,7 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 		filters.Add(filter)
 		log.Infof("Added Filter: %#v", filter)
 	}
-	var filter LogFilter = filters.AsFilter()
+	var filter = filters.AsFilter()
 
 	for {
 		var line []byte
@@ -223,7 +236,7 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 
 		if err := json.Unmarshal(line, &entry); err != nil {
 			log.Errorf("Failed to parse JSON: %s", err)
-			fmt.Fprintln(outstream, string(line))
+			_, _ = fmt.Fprintln(outstream, string(line))
 			continue
 		}
 		if filter.Filter(cmd.Context(), entry) {
@@ -231,7 +244,7 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 
 			entry.Write(cmd.Context(), &output, &CmdOptions.OutputOptions)
 			if output.Len() > 0 {
-				fmt.Fprintln(outstream, output.String())
+				_, _ = fmt.Fprintln(outstream, output.String())
 			}
 		}
 	}
