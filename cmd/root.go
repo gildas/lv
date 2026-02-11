@@ -82,6 +82,7 @@ func init() {
 	_ = viper.BindPFlag("timezone", RootCmd.PersistentFlags().Lookup("time"))
 	_ = viper.BindPFlag("output", RootCmd.PersistentFlags().Lookup("output"))
 	_ = viper.BindPFlag("color", RootCmd.PersistentFlags().Lookup("color"))
+	_ = viper.BindPFlag("obfuscationKey", RootCmd.PersistentFlags().Lookup("key"))
 	viper.SetDefault("local", false)
 	viper.SetDefault("timezone", "UTC")
 	viper.SetDefault("output", "long")
@@ -120,8 +121,8 @@ func initConfig() {
 		viper.SetConfigName(".logviewer")
 	}
 
-	viper.SetEnvPrefix("LV_")
-	_ = viper.BindEnv("local")
+	viper.SetEnvPrefix("LV")
+	_ = viper.BindEnv("local", "obfuscationKey")
 	viper.AutomaticEnv() // read in environment variables that match
 
 	err := viper.ReadInConfig()
@@ -156,8 +157,8 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 	}
 	CmdOptions.Output.Value = viper.GetString("output")
 
-	if len(CmdOptions.CipherKey) > 0 {
-		cipherBlock, err := aes.NewCipher([]byte(CmdOptions.CipherKey))
+	if len(viper.GetString("obfuscationKey")) > 0 {
+		cipherBlock, err := aes.NewCipher([]byte(viper.GetString("obfuscationKey")))
 		if err != nil {
 			log.Fatalf("Failed to create cipher block: %s", err)
 			return err

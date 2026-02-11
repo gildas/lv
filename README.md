@@ -129,9 +129,10 @@ The key must be 16, 24, or 32 bytes long.
 
 `lv` uses the following environment variables:
 
-- `LOGVIEWER_COLOR` to force colorization of the output
-- `LOGVIEWER_LOCAL` to display the time in local time
-- `LOGVIEWER_TIMEZONE` to display the time in a specific timezone
+- `LV_COLOR` to force colorization of the output
+- `LV_LOCAL` to display the time in local time
+- `LV_TIMEZONE` to display the time in a specific timezone
+- `LV_OBFUSCATIONKEY` to specify the key used to decrypt obfuscated log entries
 
 The command line flags have precedence over the environment variables.
 
@@ -145,6 +146,7 @@ Here is an example of a configuration file:
 color: true
 local: true
 output: short
+obfuscationKey: 1231213
 ```
 
 The environment variables and the command line flags have precedence over the configuration file.
