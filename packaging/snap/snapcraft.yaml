@@ -1,15 +1,26 @@
 name: bunyan-logviewer
-summary: Logviewer
+title: Bunyan Logviewer
+summary: Logviewer for Bunyan and Pino based loggers
 description: |
       lv is a logviewer for bunyan and pino based loggers.
 website: https://github.com/gildas/lv
 source-code: https://github.com/gildas/lv
 issues: https://github.com/gildas/lv/issues
+contact:
+  - https://github.com/gildas/lv
 license: MIT
-version: 0.3.3
-base: core22
+version: 0.3.4
+base: core24
 grade: stable
 confinement: strict
+
+platforms:
+  amd64:
+    build-on:  [amd64]
+    build-for: [amd64]
+  arm64:
+    build-on:  [arm64]
+    build-for: [arm64]
 
 plugs:
   dot-config-logviewer:
