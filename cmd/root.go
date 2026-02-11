@@ -170,7 +170,7 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 			log.Fatalf("Failed to open file %s: %s", args[0], err)
 			return err
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 		reader = bufio.NewReader(file)
 	}
 
@@ -202,7 +202,7 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 		filters.Add(filter)
 		log.Infof("Added Filter: %#v", filter)
 	}
-	var filter LogFilter = filters.AsFilter()
+	var filter = filters.AsFilter()
 
 	for {
 		var line []byte
@@ -223,7 +223,7 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 
 		if err := json.Unmarshal(line, &entry); err != nil {
 			log.Errorf("Failed to parse JSON: %s", err)
-			fmt.Fprintln(outstream, string(line))
+			_, _ = fmt.Fprintln(outstream, string(line))
 			continue
 		}
 		if filter.Filter(cmd.Context(), entry) {
@@ -231,7 +231,7 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 
 			entry.Write(cmd.Context(), &output, &CmdOptions.OutputOptions)
 			if output.Len() > 0 {
-				fmt.Fprintln(outstream, output.String())
+				_, _ = fmt.Fprintln(outstream, output.String())
 			}
 		}
 	}
