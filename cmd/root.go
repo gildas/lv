@@ -31,6 +31,7 @@ type OutputOptions struct {
 // CmdOptions contains the global options
 var CmdOptions struct {
 	OutputOptions
+	KubectlLogsOptions
 	Completion     *flags.EnumFlag
 	ConfigFile     string
 	CipherKey      string
@@ -62,8 +63,8 @@ func init() {
 	RootCmd.PersistentFlags().Var(CmdOptions.Completion, "completion", "Generates completion script for bash, zsh, fish, or powershell")
 	RootCmd.PersistentFlags().StringVar(&CmdOptions.ConfigFile, "config", "", fmt.Sprintf("config file (default is %s)", filepath.Join(configDir, "logviewer", "config.yaml")))
 	RootCmd.PersistentFlags().StringVar(&CmdOptions.LogLevel, "level", "", "Only shows log entries with a level at or above the given value.")
-	RootCmd.PersistentFlags().StringVarP(&CmdOptions.Filter, "filter", "f", "", "Run each log message through the filter.")
-	RootCmd.PersistentFlags().StringVarP(&CmdOptions.Filter, "condition", "c", "", "Run each log message through the filter.")
+	RootCmd.PersistentFlags().StringVar(&CmdOptions.Filter, "filter", "", "Run each log message through the filter.")
+	RootCmd.PersistentFlags().StringVar(&CmdOptions.Filter, "condition", "", "Run each log message through the filter.")
 	RootCmd.PersistentFlags().StringVarP(&CmdOptions.CipherKey, "key", "k", "", "Use the given key to decrypt obfuscated log entries. The key must be 16, 24, or 32 bytes long.")
 	RootCmd.PersistentFlags().BoolP("local", "L", false, "Display time field in local time, rather than UTC.")
 	RootCmd.PersistentFlags().StringVar(&CmdOptions.Timezone, "time", "", "Display time field in the given timezone.")
@@ -74,6 +75,8 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&CmdOptions.LogDestination, "log", "", "where logs are writen if given (by default, no log is generated)")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.Debug, "debug", false, "forces logging at DEBUG level")
 	RootCmd.PersistentFlags().BoolVarP(&CmdOptions.Verbose, "verbose", "v", false, "runs verbosely if set")
+	AddKubectlLogsFlags(RootCmd)
+
 	_ = RootCmd.RegisterFlagCompletionFunc(CmdOptions.Output.CompletionFunc("output"))
 	_ = RootCmd.RegisterFlagCompletionFunc(CmdOptions.Completion.CompletionFunc("completion"))
 
@@ -151,8 +154,8 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 	if cmd.Flags().Changed("no-color") {
 		CmdOptions.UseColors = false
 	}
-	CmdOptions.UsePager = isStdoutTTY() && isStdinTTY()
-	if cmd.Flags().Changed("no-pager") {
+	CmdOptions.UsePager = isStdoutTTY() && isStdinTTY() && !HasKubectlLogsFlags(cmd)
+	if cmd.Flags().Changed("no-pager") || viper.GetBool("no-pager") {
 		CmdOptions.UsePager = false
 	}
 	CmdOptions.Output.Value = viper.GetString("output")
@@ -175,7 +178,27 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 	}
 	log.Infof("Displaying time at location: %s", CmdOptions.Location)
 
-	if len(args) == 0 {
+	// If some of the Kubectl Logs flags are set, we should execute kubectl logs command and read from its output
+	if HasKubectlLogsFlags(cmd) {
+		pipeReader, pipeWriter, err := os.Pipe()
+		if err != nil {
+			log.Fatalf("Failed to create pipe: %s", err)
+			return err
+		}
+		reader = bufio.NewReader(pipeReader)
+
+		log.Infof("Executing kubectl logs command with the given flags")
+		go func() {
+			defer func() { _ = pipeWriter.Close() }()
+			params := BuildKubectlLogsParameters(cmd)
+			params = append(params, args...)
+			if err := NewKubectl().Exec(cmd.Context(), params, pipeWriter, pipeWriter); err != nil {
+				log.Fatalf("Failed to execute kubectl logs command: %s", err)
+				fmt.Fprintln(os.Stderr, err.Error())
+			}
+		}()
+	} else if len(args) == 0 {
+		log.Infof("Reading from stdin")
 		reader = bufio.NewReader(os.Stdin)
 	} else {
 		file, err := os.Open(args[0])
