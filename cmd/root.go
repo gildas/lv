@@ -44,9 +44,11 @@ var CmdOptions struct {
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
-	Short: "pretty-print logviewer logs from stdin or file(s)",
-	Long:  "logviewer is a simple and fast JSON log viewer. It reads log entries from given files or stdin and pretty-prints them to stdout.",
-	RunE:  runRootCommand,
+	Short:             "pretty-print logviewer logs from stdin, file(s), or Kubernetes resources",
+	Long:              "logviewer is a simple and fast JSON log viewer. It reads log entries from given files, stdin, or Kubernetes resources and pretty-prints them to stdout.",
+	Args:              cobra.MaximumNArgs(1),
+	ValidArgsFunction: validateArgs,
+	RunE:              runRootCommand,
 }
 
 // Execute run the command
@@ -138,6 +140,23 @@ func initConfig() {
 	} else {
 		log.Infof("Config File: %s", viper.ConfigFileUsed())
 	}
+}
+
+// validateArgs validates the arguments passed to the root command
+func validateArgs(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	log := logger.Must(logger.FromContext(cmd.Context())).Child("completion", "validate-args")
+
+	// If the command flags indicate we are using Kubernetes resources, we should complete pods
+	if HasKubectlLogsFlags(cmd) {
+		log.Debugf("Kubectl logs flags detected, completing pods for args: %s", args)
+		if pods, err := KubeCtlGetPods(cmd.Context(), cmd, args, toComplete); err == nil {
+			return pods, cobra.ShellCompDirectiveNoFileComp
+		}
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	// If not, we should complete files in the current directory
+	log.Debugf("Letting the shell to complete the files in the current directory for args: %s", args)
+	return nil, cobra.ShellCompDirectiveDefault
 }
 
 // runRootCommand executes the Root Command
