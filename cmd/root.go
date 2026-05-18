@@ -32,6 +32,7 @@ type OutputOptions struct {
 var CmdOptions struct {
 	OutputOptions
 	KubectlLogsOptions
+	KubectlExtraLogsOptions
 	Completion     *flags.EnumFlag
 	ConfigFile     string
 	CipherKey      string
@@ -78,6 +79,7 @@ func init() {
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.Debug, "debug", false, "forces logging at DEBUG level")
 	RootCmd.PersistentFlags().BoolVarP(&CmdOptions.Verbose, "verbose", "v", false, "runs verbosely if set")
 	AddKubectlLogsFlags(RootCmd)
+	AddKubectlExtraLogsFlags(RootCmd)
 
 	_ = RootCmd.RegisterFlagCompletionFunc(CmdOptions.Output.CompletionFunc("output"))
 	_ = RootCmd.RegisterFlagCompletionFunc(CmdOptions.Completion.CompletionFunc("completion"))

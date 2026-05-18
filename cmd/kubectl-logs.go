@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"slices"
 	"time"
 
@@ -55,6 +56,16 @@ type KubectlLogsOptions struct {
 	WarningsAsErrors             bool
 }
 
+type KubectlExtraLogsOptions struct {
+	Connector   *flags.EnumFlag
+	Platform    *flags.EnumFlag
+	Provider    *flags.EnumFlag
+	Role        *flags.EnumFlag
+	Tier        *flags.EnumFlag
+	Name        *flags.EnumFlag
+	Application *flags.EnumFlag
+}
+
 var kubectlLogsFlVags = []string{
 	"all-containers",
 	"all-pods",
@@ -100,6 +111,17 @@ var kubectlLogsFlVags = []string{
 	"username",
 	"vmodule",
 	"warnings-as-errors",
+}
+
+var kubectlExtraLogsFlVags = []string{
+	"connector",
+	"platform",
+	"provider",
+	"role",
+	"tier",
+	"name",
+	"application",
+	"app",
 }
 
 func AddKubectlLogsFlags(cmd *cobra.Command) {
@@ -155,9 +177,41 @@ func AddKubectlLogsFlags(cmd *cobra.Command) {
 	_ = cmd.RegisterFlagCompletionFunc(CmdOptions.Namespace.CompletionFunc("namespace"))
 }
 
+func AddKubectlExtraLogsFlags(cmd *cobra.Command) {
+	CmdOptions.Connector = flags.NewEnumFlagWithFunc("", KubeCtlGetConnectors)
+	CmdOptions.Platform = flags.NewEnumFlagWithFunc("", KubeCtlGetPlatforms)
+	CmdOptions.Provider = flags.NewEnumFlagWithFunc("", KubeCtlGetProviders)
+	CmdOptions.Role = flags.NewEnumFlagWithFunc("", KubeCtlGetRoles)
+	CmdOptions.Tier = flags.NewEnumFlagWithFunc("", KubeCtlGetTiers)
+	CmdOptions.Name = flags.NewEnumFlagWithFunc("", KubeCtlGetNames)
+	CmdOptions.Application = flags.NewEnumFlagWithFunc("", KubeCtlGetApplications)
+
+	cmd.Flags().Var(CmdOptions.Connector, "connector", "The name of the connector to use for logs")
+	cmd.Flags().Var(CmdOptions.Platform, "platform", "The name of the platform to use for logs")
+	cmd.Flags().Var(CmdOptions.Provider, "provider", "The name of the provider to use for logs")
+	cmd.Flags().Var(CmdOptions.Role, "role", "The name of the role to use for logs")
+	cmd.Flags().Var(CmdOptions.Tier, "tier", "The name of the tier to use for logs")
+	cmd.Flags().Var(CmdOptions.Name, "name", "The name of the resource to use for logs")
+	cmd.Flags().Var(CmdOptions.Application, "application", "The name of the application to use for logs")
+	cmd.Flags().Var(CmdOptions.Application, "app", "The name of the application to use for logs")
+
+	cmd.MarkFlagsMutuallyExclusive("connector", "platform", "provider", "application", "app", "name", "role", "tier")
+
+	_ = cmd.RegisterFlagCompletionFunc(CmdOptions.Connector.CompletionFunc("connector"))
+	_ = cmd.RegisterFlagCompletionFunc(CmdOptions.Platform.CompletionFunc("platform"))
+	_ = cmd.RegisterFlagCompletionFunc(CmdOptions.Provider.CompletionFunc("provider"))
+	_ = cmd.RegisterFlagCompletionFunc(CmdOptions.Role.CompletionFunc("role"))
+	_ = cmd.RegisterFlagCompletionFunc(CmdOptions.Tier.CompletionFunc("tier"))
+	_ = cmd.RegisterFlagCompletionFunc(CmdOptions.Name.CompletionFunc("name"))
+	_ = cmd.RegisterFlagCompletionFunc(CmdOptions.Application.CompletionFunc("application"))
+	_ = cmd.RegisterFlagCompletionFunc(CmdOptions.Application.CompletionFunc("app"))
+}
+
 // HasKubectlLogsFlags checks if any of the kubectl logs flags are present in the command
 func HasKubectlLogsFlags(cmd *cobra.Command) bool {
 	return slices.ContainsFunc(kubectlLogsFlVags, func(flag string) bool {
+		return cmd.Flags().Changed(flag)
+	}) || slices.ContainsFunc(kubectlExtraLogsFlVags, func(flag string) bool {
 		return cmd.Flags().Changed(flag)
 	})
 }
@@ -172,6 +226,19 @@ func BuildKubectlLogsParameters(cmd *cobra.Command) (params []string) {
 				params = append(params, cmd.Flags().Lookup(flag).Value.String())
 			}
 		}
+	}
+	selector := ""
+	for _, flag := range kubectlExtraLogsFlVags {
+		if cmd.Flags().Changed(flag) {
+			// If the flag has a value, we need to add it as well
+			if cmd.Flags().Lookup(flag).Value.String() != "" && cmd.Flags().Lookup(flag).Value.Type() != "bool" {
+				selector = fmt.Sprintf("%s=%s", flag, cmd.Flags().Lookup(flag).Value.String())
+				break
+			}
+		}
+	}
+	if len(selector) > 0 {
+		params = append(params, "--selector", selector)
 	}
 	return
 }
