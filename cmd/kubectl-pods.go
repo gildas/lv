@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"slices"
 	"strings"
 
 	"github.com/gildas/go-logger"
@@ -21,14 +22,14 @@ func KubeCtlGetPods(ctx context.Context, cmd *cobra.Command, args []string, toCo
 		return nil, err
 	}
 
-	kubectlNamespace, err := KubeCtlGetCurrentNamespace(ctx, cmd)
+	kubectlNamespace, err := KubeCtlGetCurrentNamespace(ctx, cmd, kubectlContext)
 	if err != nil {
 		log.Errorf("Error getting current namespace: ", err)
 		log.Errorf("Stderr: %s", stderr.String())
 		return nil, err
 	}
 
-	log.Debugf("Getting pods for completion with args: %s", args)
+	log.Debugf("Getting pods for completion in namespace %s with context %s and args: %s", kubectlNamespace, kubectlContext, args)
 	err = NewKubectl().Exec(ctx, []string{"get", "pods", "--context", kubectlContext, "--namespace", kubectlNamespace, "-o", "jsonpath={.items[*].metadata.name}"}, &stdout, &stderr)
 	if err != nil {
 		log.Errorf("Error getting pods: ", err)
@@ -38,7 +39,9 @@ func KubeCtlGetPods(ctx context.Context, cmd *cobra.Command, args []string, toCo
 
 	pods := []string{}
 	for pod := range strings.FieldsSeq(stdout.String()) {
-		pods = append(pods, pod)
+		if !slices.Contains(pods, pod) {
+			pods = append(pods, pod)
+		}
 	}
 
 	return FilterValidArgs(pods, args, toComplete), nil

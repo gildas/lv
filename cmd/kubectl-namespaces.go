@@ -17,7 +17,6 @@ func KubeCtlGetNamespaces(ctx context.Context, cmd *cobra.Command, args []string
 	kubectlContext, err := KubeCtlGetCurrentContext(ctx, cmd)
 	if err != nil {
 		log.Errorf("Error getting current context: ", err)
-		log.Errorf("Stderr: %s", stderr.String())
 		return nil, err
 	}
 
@@ -38,17 +37,27 @@ func KubeCtlGetNamespaces(ctx context.Context, cmd *cobra.Command, args []string
 }
 
 // KubeCtlGetCurrentNamespace gets the current context for the current kubeconfig
-func KubeCtlGetCurrentNamespace(ctx context.Context, cmd *cobra.Command) (string, error) {
+func KubeCtlGetCurrentNamespace(ctx context.Context, cmd *cobra.Command, kubectlContext string) (string, error) {
 	log := logger.Must(logger.FromContext(ctx)).Child("kubectl", "current-namespace")
 
 	if cmd.Flags().Changed("namespace") {
 		return CmdOptions.Namespace.Value, nil
 	}
 
+	if len(kubectlContext) == 0 {
+		var err error
+
+		kubectlContext, err = KubeCtlGetCurrentContext(ctx, cmd)
+		if err != nil {
+			log.Errorf("Error getting current context: ", err)
+			return "", err
+		}
+	}
+
 	var stdout, stderr bytes.Buffer
 
-	log.Debugf("Getting current namespace")
-	err := NewKubectl().Exec(ctx, []string{"config", "view", "--minify", "--output", "jsonpath={..namespace}"}, &stdout, &stderr)
+	log.Debugf("Getting current namespace for context %s", kubectlContext)
+	err := NewKubectl().Exec(ctx, []string{"config", "view", "--context", kubectlContext, "--minify", "--output", "jsonpath={..namespace}"}, &stdout, &stderr)
 	if err != nil {
 		log.Errorf("Error getting current namespace: ", err)
 		log.Errorf("Stderr: %s", stderr.String())

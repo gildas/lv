@@ -22,7 +22,7 @@ func KubeCtlGetNames(ctx context.Context, cmd *cobra.Command, args []string, toC
 		return nil, err
 	}
 
-	kubectlNamespace, err := KubeCtlGetCurrentNamespace(ctx, cmd)
+	kubectlNamespace, err := KubeCtlGetCurrentNamespace(ctx, cmd, kubectlContext)
 	if err != nil {
 		log.Errorf("Error getting current namespace: ", err)
 		log.Errorf("Stderr: %s", stderr.String())

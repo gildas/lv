@@ -22,14 +22,14 @@ func KubeCtlGetApplications(ctx context.Context, cmd *cobra.Command, args []stri
 		return nil, err
 	}
 
-	kubectlNamespace, err := KubeCtlGetCurrentNamespace(ctx, cmd)
+	kubectlNamespace, err := KubeCtlGetCurrentNamespace(ctx, cmd, kubectlContext)
 	if err != nil {
 		log.Errorf("Error getting current namespace: ", err)
 		log.Errorf("Stderr: %s", stderr.String())
 		return nil, err
 	}
 
-	log.Debugf("Getting applications for completion with args: %s", args)
+	log.Debugf("Getting applications for completion in namespace %s with context %s and args: %s", kubectlNamespace, kubectlContext, args)
 	err = NewKubectl().Exec(ctx, []string{"get", "deployments.apps", "--context", kubectlContext, "--namespace", kubectlNamespace, "-o", "jsonpath={.items[*].metadata.labels.app\\.kubernetes\\.io/name}"}, &stdout, &stderr)
 	if err != nil {
 		log.Errorf("Error getting applications: ", err)
