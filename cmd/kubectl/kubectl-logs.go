@@ -124,6 +124,16 @@ var kubectlExtraLogsFlVags = []string{
 	"app",
 }
 
+var kubectlExtraLogsSelectors = map[string]string{
+	"application": "app.kubernetes.io/name",
+	"app":         "app.kubernetes.io/name",
+	"connector":   "connector",
+	"platform":    "platform",
+	"provider":    "provider",
+	"role":        "role",
+	"tier":        "tier",
+}
+
 // CreateLogsFlags creates the flags for the kubectl logs command
 func CreateLogsFlags(cmd *cobra.Command) (options LogsOptions) {
 	options.Context = flags.NewEnumFlagWithFunc(cmd, "", GetContexts)
@@ -241,7 +251,7 @@ func BuildLogsParameters(cmd *cobra.Command) (params []string) {
 		if cmd.Flags().Changed(flag) {
 			// If the flag has a value, we need to add it as well
 			if cmd.Flags().Lookup(flag).Value.String() != "" && cmd.Flags().Lookup(flag).Value.Type() != "bool" {
-				selector = fmt.Sprintf("%s=%s", flag, cmd.Flags().Lookup(flag).Value.String())
+				selector = fmt.Sprintf("%s=%s", kubectlExtraLogsSelectors[flag], cmd.Flags().Lookup(flag).Value.String())
 				break
 			}
 		}
