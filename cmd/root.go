@@ -15,6 +15,7 @@ import (
 	"github.com/gildas/go-errors"
 	"github.com/gildas/go-flags"
 	"github.com/gildas/go-logger"
+	"github.com/gildas/lv/cmd/kubectl"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -30,8 +31,8 @@ type OutputOptions struct {
 // CmdOptions contains the global options
 var CmdOptions struct {
 	OutputOptions
-	KubectlLogsOptions
-	KubectlExtraLogsOptions
+	kubectl.LogsOptions
+	kubectl.ExtraLogsOptions
 	Completion     *flags.EnumFlag
 	ConfigFile     string
 	CipherKey      string
@@ -77,8 +78,8 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&CmdOptions.LogDestination, "log", "", "where logs are writen if given (by default, no log is generated)")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.Debug, "debug", false, "forces logging at DEBUG level")
 	RootCmd.PersistentFlags().BoolVarP(&CmdOptions.Verbose, "verbose", "v", false, "runs verbosely if set")
-	AddKubectlLogsFlags(RootCmd)
-	AddKubectlExtraLogsFlags(RootCmd)
+	CmdOptions.LogsOptions = kubectl.CreateLogsFlags(RootCmd)
+	CmdOptions.ExtraLogsOptions = kubectl.CreateExtraLogsFlags(RootCmd)
 
 	_ = RootCmd.RegisterFlagCompletionFunc(CmdOptions.Output.CompletionFunc("output"))
 	_ = RootCmd.RegisterFlagCompletionFunc(CmdOptions.Completion.CompletionFunc("completion"))
@@ -97,9 +98,9 @@ func validRootArgs(cmd *cobra.Command, args []string, toComplete string) ([]stri
 	log := logger.Must(logger.FromContext(cmd.Context())).Child("completion", "validate-args")
 
 	// If the command flags indicate we are using Kubernetes resources, we should complete pods
-	if HasKubectlLogsFlags(cmd) {
+	if kubectl.HasLogsFlags(cmd) {
 		log.Debugf("Kubectl logs flags detected, completing pods for args: %s", args)
-		if pods, err := KubeCtlGetPods(cmd.Context(), cmd, args, toComplete); err == nil {
+		if pods, err := kubectl.GetPods(cmd.Context(), cmd, args, toComplete); err == nil {
 			return pods, cobra.ShellCompDirectiveNoFileComp
 		}
 		return nil, cobra.ShellCompDirectiveNoFileComp
@@ -123,7 +124,7 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 	if cmd.Flags().Changed("no-color") {
 		CmdOptions.UseColors = false
 	}
-	CmdOptions.UsePager = isStdoutTTY() && isStdinTTY() && !HasKubectlLogsFlags(cmd)
+	CmdOptions.UsePager = isStdoutTTY() && isStdinTTY() && !kubectl.HasLogsFlags(cmd)
 	if cmd.Flags().Changed("no-pager") || viper.GetBool("no-pager") {
 		CmdOptions.UsePager = false
 	}
@@ -148,7 +149,7 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 	log.Infof("Displaying time at location: %s", CmdOptions.Location)
 
 	// If some of the Kubectl Logs flags are set, we should execute kubectl logs command and read from its output
-	if HasKubectlLogsFlags(cmd) {
+	if kubectl.HasLogsFlags(cmd) {
 		pipeReader, pipeWriter, err := os.Pipe()
 		if err != nil {
 			log.Fatalf("Failed to create pipe: %s", err)
@@ -159,9 +160,9 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 		log.Infof("Executing kubectl logs command with the given flags")
 		go func() {
 			defer func() { _ = pipeWriter.Close() }()
-			params := BuildKubectlLogsParameters(cmd)
+			params := kubectl.BuildLogsParameters(cmd)
 			params = append(params, args...)
-			if err := NewKubectl().Exec(cmd.Context(), params, pipeWriter, pipeWriter); err != nil {
+			if err := kubectl.New().Exec(cmd.Context(), params, pipeWriter, pipeWriter); err != nil {
 				log.Fatalf("Failed to execute kubectl logs command: %s", err)
 				fmt.Fprintln(os.Stderr, err.Error())
 			}

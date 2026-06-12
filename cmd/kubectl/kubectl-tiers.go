@@ -1,4 +1,4 @@
-package cmd
+package kubectl
 
 import (
 	"bytes"
@@ -7,22 +7,23 @@ import (
 	"strings"
 
 	"github.com/gildas/go-logger"
+	"github.com/gildas/lv/cmd/common"
 	"github.com/spf13/cobra"
 )
 
-// KubeCtlGetTiers gets the tiers for the current context
-func KubeCtlGetTiers(ctx context.Context, cmd *cobra.Command, args []string, toComplete string) ([]string, error) {
+// GetTiers gets the tiers for the current context
+func GetTiers(ctx context.Context, cmd *cobra.Command, args []string, toComplete string) ([]string, error) {
 	log := logger.Must(logger.FromContext(ctx)).Child("kubectl", "tiers")
 	var stdout, stderr bytes.Buffer
 
-	kubectlContext, err := KubeCtlGetCurrentContext(ctx, cmd)
+	kubectlContext, err := GetCurrentContext(ctx, cmd)
 	if err != nil {
 		log.Errorf("Error getting current context: ", err)
 		log.Errorf("Stderr: %s", stderr.String())
 		return nil, err
 	}
 
-	kubectlNamespace, err := KubeCtlGetCurrentNamespace(ctx, cmd, kubectlContext)
+	kubectlNamespace, err := GetCurrentNamespace(ctx, cmd, kubectlContext)
 	if err != nil {
 		log.Errorf("Error getting current namespace: ", err)
 		log.Errorf("Stderr: %s", stderr.String())
@@ -30,7 +31,7 @@ func KubeCtlGetTiers(ctx context.Context, cmd *cobra.Command, args []string, toC
 	}
 
 	log.Debugf("Getting tiers for completion in namespace %s with context %s and args: %s", kubectlNamespace, kubectlContext, args)
-	err = NewKubectl().Exec(ctx, []string{"get", "deployments.apps", "--context", kubectlContext, "--namespace", kubectlNamespace, "-o", "jsonpath={.items[*].metadata.labels.tier}"}, &stdout, &stderr)
+	err = New().Exec(ctx, []string{"get", "deployments.apps", "--context", kubectlContext, "--namespace", kubectlNamespace, "-o", "jsonpath={.items[*].metadata.labels.tier}"}, &stdout, &stderr)
 	if err != nil {
 		log.Errorf("Error getting tiers: ", err)
 		log.Errorf("Stderr: %s", stderr.String())
@@ -44,5 +45,5 @@ func KubeCtlGetTiers(ctx context.Context, cmd *cobra.Command, args []string, toC
 		}
 	}
 
-	return FilterValidArgs(tiers, args, toComplete), nil
+	return common.FilterValidArgs(tiers, args, toComplete), nil
 }

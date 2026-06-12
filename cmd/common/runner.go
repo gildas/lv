@@ -1,10 +1,11 @@
-package cmd
+package common
 
 import (
 	"context"
 	"io"
 )
 
+// Runner describes a command runner that can be used to execute commands and capture their output.
 type Runner struct {
 	Stdout io.Writer
 	Stderr io.Writer

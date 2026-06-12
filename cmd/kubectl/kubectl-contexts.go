@@ -1,4 +1,4 @@
-package cmd
+package kubectl
 
 import (
 	"bytes"
@@ -6,16 +6,17 @@ import (
 	"strings"
 
 	"github.com/gildas/go-logger"
+	"github.com/gildas/lv/cmd/common"
 	"github.com/spf13/cobra"
 )
 
-// KubeCtlGetContexts gets the contexts for the current kubeconfig
-func KubeCtlGetContexts(ctx context.Context, cmd *cobra.Command, args []string, toComplete string) ([]string, error) {
+// GetContexts gets the contexts for the current kubeconfig
+func GetContexts(ctx context.Context, cmd *cobra.Command, args []string, toComplete string) ([]string, error) {
 	log := logger.Must(logger.FromContext(ctx)).Child("kubectl", "contexts")
 	var stdout, stderr bytes.Buffer
 
 	log.Debugf("Getting contexts for completion with args: %s", args)
-	err := NewKubectl().Exec(ctx, []string{"config", "get-contexts", "-o", "name"}, &stdout, &stderr)
+	err := New().Exec(ctx, []string{"config", "get-contexts", "-o", "name"}, &stdout, &stderr)
 	if err != nil {
 		log.Errorf("Error getting contexts: ", err)
 		log.Errorf("Stderr: %s", stderr.String())
@@ -27,21 +28,21 @@ func KubeCtlGetContexts(ctx context.Context, cmd *cobra.Command, args []string, 
 		contexts = append(contexts, context)
 	}
 
-	return FilterValidArgs(contexts, args, toComplete), nil
+	return common.FilterValidArgs(contexts, args, toComplete), nil
 }
 
-// KubeCtlGetCurrentContext gets the current context for the current kubeconfig
-func KubeCtlGetCurrentContext(ctx context.Context, cmd *cobra.Command) (string, error) {
+// GetCurrentContext gets the current context for the current kubeconfig
+func GetCurrentContext(ctx context.Context, cmd *cobra.Command) (string, error) {
 	log := logger.Must(logger.FromContext(ctx)).Child("kubectl", "current-context")
 
 	if cmd.Flags().Changed("context") {
-		return CmdOptions.Context.Value, nil
+		return cmd.Flags().Lookup("context").Value.String(), nil
 	}
 
 	var stdout, stderr bytes.Buffer
 
 	log.Debugf("Getting current context")
-	err := NewKubectl().Exec(ctx, []string{"config", "current-context"}, &stdout, &stderr)
+	err := New().Exec(ctx, []string{"config", "current-context"}, &stdout, &stderr)
 	if err != nil {
 		log.Errorf("Error getting current context: ", err)
 		log.Errorf("Stderr: %s", stderr.String())

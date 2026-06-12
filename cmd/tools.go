@@ -9,7 +9,6 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/gildas/go-core"
 	"github.com/gildas/go-logger"
 	"golang.org/x/term"
 )
@@ -95,22 +94,4 @@ func ReadLine(reader io.Reader) (line []byte, err error) {
 		}
 		_ = buffer.WriteByte(b[0])
 	}
-}
-
-// FilterValidArgs filters the valid arguments and keeps only the ones
-// that match the toComplete string and that are not present in args
-//
-// Note: the result is a new slice, the original is not modified
-func FilterValidArgs(valid, args []string, toComplete string) []string {
-	if len(toComplete) > 0 {
-		valid = core.Filter(valid, func(value string) bool {
-			return strings.HasPrefix(value, toComplete)
-		})
-	}
-	if len(args) > 0 {
-		valid = core.Filter(valid, func(value string) bool {
-			return !core.Contains(args, value)
-		})
-	}
-	return valid
 }

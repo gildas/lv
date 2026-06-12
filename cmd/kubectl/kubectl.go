@@ -1,4 +1,4 @@
-package cmd
+package kubectl
 
 import (
 	"context"
@@ -7,11 +7,12 @@ import (
 	"os/exec"
 
 	"github.com/gildas/go-logger"
+	"github.com/gildas/lv/cmd/common"
 )
 
-// NewKubectl
-func NewKubectl() *Runner {
-	return &Runner{
+// New returns a new kubectl runner
+func New() *common.Runner {
+	return &common.Runner{
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 		Exec: func(ctx context.Context, args []string, stdout, stderr io.Writer) error {
