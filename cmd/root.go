@@ -9,7 +9,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 
@@ -48,7 +47,7 @@ var RootCmd = &cobra.Command{
 	Short:             "pretty-print logviewer logs from stdin, file(s), or Kubernetes resources",
 	Long:              "logviewer is a simple and fast JSON log viewer. It reads log entries from given files, stdin, or Kubernetes resources and pretty-prints them to stdout.",
 	Args:              cobra.MaximumNArgs(1),
-	ValidArgsFunction: validateArgs,
+	ValidArgsFunction: validRootArgs,
 	RunE:              runRootCommand,
 }
 
@@ -84,68 +83,17 @@ func init() {
 	_ = RootCmd.RegisterFlagCompletionFunc(CmdOptions.Output.CompletionFunc("output"))
 	_ = RootCmd.RegisterFlagCompletionFunc(CmdOptions.Completion.CompletionFunc("completion"))
 
-	RootCmd.SilenceUsage = true
-	_ = viper.BindPFlag("local", RootCmd.PersistentFlags().Lookup("local"))
-	_ = viper.BindPFlag("timezone", RootCmd.PersistentFlags().Lookup("time"))
-	_ = viper.BindPFlag("output", RootCmd.PersistentFlags().Lookup("output"))
-	_ = viper.BindPFlag("color", RootCmd.PersistentFlags().Lookup("color"))
-	_ = viper.BindPFlag("obfuscationKey", RootCmd.PersistentFlags().Lookup("key"))
-	viper.SetDefault("local", false)
-	viper.SetDefault("timezone", "UTC")
-	viper.SetDefault("output", "long")
-	viper.SetDefault("color", true)
-
-	cobra.OnInitialize(initConfig)
+	RootCmd.SilenceUsage = true // Do not show usage when an error occurs
+	cobra.OnInitialize(func() {
+		if err := Initialize(RootCmd); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to initialize: %s\n", err)
+			os.Exit(1)
+		}
+	})
 }
 
-// initConfig reads config files and environment variable
-func initConfig() {
-	log := logger.Must(logger.FromContext(RootCmd.Context()))
-
-	if len(CmdOptions.LogDestination) > 0 {
-		log.ResetDestinations(CmdOptions.LogDestination)
-	}
-
-	log.Infof("%s", strings.Repeat("-", 80))
-	log.Infof("Starting %s v%s (%s)", RootCmd.Name(), RootCmd.Version, runtime.GOARCH)
-	log.Infof("Log Destination: %s", log)
-
-	if CmdOptions.Debug {
-		log.SetFilterLevel(logger.DEBUG)
-		log.Infof("Debug was turned on by the --debug flag")
-	}
-
-	viper.SetConfigType("yaml")
-	if len(CmdOptions.ConfigFile) > 0 { // Use config file from the flag.
-		viper.SetConfigFile(CmdOptions.ConfigFile)
-	} else if configDir, _ := os.UserConfigDir(); len(configDir) > 0 {
-		viper.AddConfigPath(filepath.Join(configDir, "logviewer"))
-		viper.SetConfigName("config.yaml")
-	} else { // Old fashion way
-		homeDir, err := os.UserHomeDir()
-		cobra.CheckErr(err)
-		viper.AddConfigPath(homeDir)
-		viper.SetConfigName(".logviewer")
-	}
-
-	viper.SetEnvPrefix("LV")
-	_ = viper.BindEnv("local", "obfuscationKey")
-	viper.AutomaticEnv() // read in environment variables that match
-
-	err := viper.ReadInConfig()
-	if verr, ok := err.(viper.ConfigFileNotFoundError); ok {
-		log.Warnf("Config file not found: %s", verr)
-	} else if err != nil {
-		log.Fatalf("Failed to read config file: %s", err)
-		fmt.Fprintf(os.Stderr, "Failed to read config file: %s\n", err)
-		os.Exit(1)
-	} else {
-		log.Infof("Config File: %s", viper.ConfigFileUsed())
-	}
-}
-
-// validateArgs validates the arguments passed to the root command
-func validateArgs(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+// validRootArgs validates the arguments passed to the root command
+func validRootArgs(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	log := logger.Must(logger.FromContext(cmd.Context())).Child("completion", "validate-args")
 
 	// If the command flags indicate we are using Kubernetes resources, we should complete pods
