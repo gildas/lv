@@ -62,7 +62,6 @@ type ExtraLogsOptions struct {
 	Provider    *flags.EnumFlag
 	Role        *flags.EnumFlag
 	Tier        *flags.EnumFlag
-	Name        *flags.EnumFlag
 	Application *flags.EnumFlag
 }
 
@@ -119,7 +118,6 @@ var kubectlExtraLogsFlVags = []string{
 	"provider",
 	"role",
 	"tier",
-	"name",
 	"application",
 	"app",
 }
@@ -200,7 +198,6 @@ func CreateExtraLogsFlags(cmd *cobra.Command) (options ExtraLogsOptions) {
 	options.Provider = flags.NewEnumFlagWithFunc(cmd, "", GetProviders)
 	options.Role = flags.NewEnumFlagWithFunc(cmd, "", GetRoles)
 	options.Tier = flags.NewEnumFlagWithFunc(cmd, "", GetTiers)
-	options.Name = flags.NewEnumFlagWithFunc(cmd, "", GetNames)
 	options.Application = flags.NewEnumFlagWithFunc(cmd, "", GetApplications)
 
 	cmd.Flags().Var(options.Connector, "connector", "The name of the connector to use for logs")
@@ -208,18 +205,16 @@ func CreateExtraLogsFlags(cmd *cobra.Command) (options ExtraLogsOptions) {
 	cmd.Flags().Var(options.Provider, "provider", "The name of the provider to use for logs")
 	cmd.Flags().Var(options.Role, "role", "The name of the role to use for logs")
 	cmd.Flags().Var(options.Tier, "tier", "The name of the tier to use for logs")
-	cmd.Flags().Var(options.Name, "name", "The name of the resource to use for logs")
 	cmd.Flags().Var(options.Application, "application", "The name of the application to use for logs")
 	cmd.Flags().Var(options.Application, "app", "The name of the application to use for logs")
 
-	cmd.MarkFlagsMutuallyExclusive("connector", "platform", "provider", "application", "app", "name", "role", "tier")
+	cmd.MarkFlagsMutuallyExclusive("connector", "platform", "provider", "application", "app", "role", "tier")
 
 	_ = cmd.RegisterFlagCompletionFunc(options.Connector.CompletionFunc("connector"))
 	_ = cmd.RegisterFlagCompletionFunc(options.Platform.CompletionFunc("platform"))
 	_ = cmd.RegisterFlagCompletionFunc(options.Provider.CompletionFunc("provider"))
 	_ = cmd.RegisterFlagCompletionFunc(options.Role.CompletionFunc("role"))
 	_ = cmd.RegisterFlagCompletionFunc(options.Tier.CompletionFunc("tier"))
-	_ = cmd.RegisterFlagCompletionFunc(options.Name.CompletionFunc("name"))
 	_ = cmd.RegisterFlagCompletionFunc(options.Application.CompletionFunc("application"))
 	_ = cmd.RegisterFlagCompletionFunc(options.Application.CompletionFunc("app"))
 	return
