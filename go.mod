@@ -1,6 +1,6 @@
 module github.com/gildas/lv
 
-go 1.25.7
+go 1.26
 
 require (
 	github.com/gildas/go-core v0.6.4
