@@ -126,8 +126,8 @@ var kubectlExtraLogsFlVags = []string{
 
 // CreateLogsFlags creates the flags for the kubectl logs command
 func CreateLogsFlags(cmd *cobra.Command) (options LogsOptions) {
-	options.Context = flags.NewEnumFlagWithFunc("", GetContexts)
-	options.Namespace = flags.NewEnumFlagWithFunc("", GetNamespaces)
+	options.Context = flags.NewEnumFlagWithFunc(cmd, "", GetContexts)
+	options.Namespace = flags.NewEnumFlagWithFunc(cmd, "", GetNamespaces)
 
 	cmd.Flags().BoolVar(&options.AllContainers, "all-containers", false, "Get all containers' logs in the pod(s).")
 	cmd.Flags().BoolVar(&options.AllPods, "all-pods", false, "Get logs from all pod(s). Sets prefix to true.")
@@ -185,13 +185,13 @@ func CreateLogsFlags(cmd *cobra.Command) (options LogsOptions) {
 //
 // Caveat: these flags are based on the Kubernetes clusters I typically build. It would be nice to make this configurable
 func CreateExtraLogsFlags(cmd *cobra.Command) (options ExtraLogsOptions) {
-	options.Connector = flags.NewEnumFlagWithFunc("", GetConnectors)
-	options.Platform = flags.NewEnumFlagWithFunc("", GetPlatforms)
-	options.Provider = flags.NewEnumFlagWithFunc("", GetProviders)
-	options.Role = flags.NewEnumFlagWithFunc("", GetRoles)
-	options.Tier = flags.NewEnumFlagWithFunc("", GetTiers)
-	options.Name = flags.NewEnumFlagWithFunc("", GetNames)
-	options.Application = flags.NewEnumFlagWithFunc("", GetApplications)
+	options.Connector = flags.NewEnumFlagWithFunc(cmd, "", GetConnectors)
+	options.Platform = flags.NewEnumFlagWithFunc(cmd, "", GetPlatforms)
+	options.Provider = flags.NewEnumFlagWithFunc(cmd, "", GetProviders)
+	options.Role = flags.NewEnumFlagWithFunc(cmd, "", GetRoles)
+	options.Tier = flags.NewEnumFlagWithFunc(cmd, "", GetTiers)
+	options.Name = flags.NewEnumFlagWithFunc(cmd, "", GetNames)
+	options.Application = flags.NewEnumFlagWithFunc(cmd, "", GetApplications)
 
 	cmd.Flags().Var(options.Connector, "connector", "The name of the connector to use for logs")
 	cmd.Flags().Var(options.Platform, "platform", "The name of the platform to use for logs")
