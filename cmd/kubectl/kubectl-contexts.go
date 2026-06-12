@@ -24,7 +24,7 @@ func GetContexts(ctx context.Context, cmd *cobra.Command, args []string, toCompl
 	}
 
 	contexts := []string{}
-	for _, context := range strings.Fields(stdout.String()) {
+	for context := range strings.FieldsSeq(stdout.String()) {
 		contexts = append(contexts, context)
 	}
 
