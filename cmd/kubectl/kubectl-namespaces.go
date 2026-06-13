@@ -22,7 +22,7 @@ func GetNamespaces(ctx context.Context, cmd *cobra.Command, args []string, toCom
 	}
 
 	log.Debugf("Getting namespaces for completion with args: %s", args)
-	err = New().Exec(ctx, []string{"get", "namespaces", "--context", kubectlContext, "-o", "jsonpath={.items[*].metadata.name}"}, &stdout, &stderr)
+	err = NewKubectl().Exec(ctx, []string{"get", "namespaces", "--context", kubectlContext, "-o", "jsonpath={.items[*].metadata.name}"}, &stdout, &stderr)
 	if err != nil {
 		log.Errorf("Error getting namespaces: ", err)
 		log.Errorf("Stderr: %s", stderr.String())
@@ -58,7 +58,7 @@ func GetCurrentNamespace(ctx context.Context, cmd *cobra.Command, kubectlContext
 	var stdout, stderr bytes.Buffer
 
 	log.Debugf("Getting current namespace for context %s", kubectlContext)
-	err := New().Exec(ctx, []string{"config", "view", "--context", kubectlContext, "--minify", "--output", "jsonpath={..namespace}"}, &stdout, &stderr)
+	err := NewKubectl().Exec(ctx, []string{"config", "view", "--context", kubectlContext, "--minify", "--output", "jsonpath={..namespace}"}, &stdout, &stderr)
 	if err != nil {
 		log.Errorf("Error getting current namespace: ", err)
 		log.Errorf("Stderr: %s", stderr.String())

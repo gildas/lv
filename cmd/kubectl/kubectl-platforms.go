@@ -31,7 +31,7 @@ func GetPlatforms(ctx context.Context, cmd *cobra.Command, args []string, toComp
 	}
 
 	log.Debugf("Getting platforms for completion in namespace %s with context %s and args: %s", kubectlNamespace, kubectlContext, args)
-	err = New().Exec(ctx, []string{"get", "deployments.apps", "--context", kubectlContext, "--namespace", kubectlNamespace, "-o", "jsonpath={.items[*].metadata.labels.platform}"}, &stdout, &stderr)
+	err = NewKubectl().Exec(ctx, []string{"get", "deployments.apps", "--context", kubectlContext, "--namespace", kubectlNamespace, "-o", "jsonpath={.items[*].metadata.labels.platform}"}, &stdout, &stderr)
 	if err != nil {
 		log.Errorf("Error getting platforms: ", err)
 		log.Errorf("Stderr: %s", stderr.String())

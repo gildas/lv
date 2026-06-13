@@ -31,7 +31,7 @@ func GetRoles(ctx context.Context, cmd *cobra.Command, args []string, toComplete
 	}
 
 	log.Debugf("Getting roles for completion in namespace %s with context %s and args: %s", kubectlNamespace, kubectlContext, args)
-	err = New().Exec(ctx, []string{"get", "deployments.apps", "--context", kubectlContext, "--namespace", kubectlNamespace, "-o", "jsonpath={.items[*].metadata.labels.role}"}, &stdout, &stderr)
+	err = NewKubectl().Exec(ctx, []string{"get", "deployments.apps", "--context", kubectlContext, "--namespace", kubectlNamespace, "-o", "jsonpath={.items[*].metadata.labels.role}"}, &stdout, &stderr)
 	if err != nil {
 		log.Errorf("Error getting roles: ", err)
 		log.Errorf("Stderr: %s", stderr.String())

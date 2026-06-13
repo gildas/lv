@@ -31,7 +31,7 @@ func GetNames(ctx context.Context, cmd *cobra.Command, args []string, toComplete
 	}
 
 	log.Debugf("Getting names for completion with args: %s", args)
-	err = New().Exec(ctx, []string{"get", "deployments.apps", "--context", kubectlContext, "--namespace", kubectlNamespace, "-o", "jsonpath={.items[*].metadata.name}"}, &stdout, &stderr)
+	err = NewKubectl().Exec(ctx, []string{"get", "deployments.apps", "--context", kubectlContext, "--namespace", kubectlNamespace, "-o", "jsonpath={.items[*].metadata.name}"}, &stdout, &stderr)
 	if err != nil {
 		log.Errorf("Error getting names: ", err)
 		log.Errorf("Stderr: %s", stderr.String())

@@ -16,7 +16,7 @@ func GetContexts(ctx context.Context, cmd *cobra.Command, args []string, toCompl
 	var stdout, stderr bytes.Buffer
 
 	log.Debugf("Getting contexts for completion with args: %s", args)
-	err := New().Exec(ctx, []string{"config", "get-contexts", "-o", "name"}, &stdout, &stderr)
+	err := NewKubectl().Exec(ctx, []string{"config", "get-contexts", "-o", "name"}, &stdout, &stderr)
 	if err != nil {
 		log.Errorf("Error getting contexts: ", err)
 		log.Errorf("Stderr: %s", stderr.String())
@@ -42,7 +42,7 @@ func GetCurrentContext(ctx context.Context, cmd *cobra.Command) (string, error) 
 	var stdout, stderr bytes.Buffer
 
 	log.Debugf("Getting current context")
-	err := New().Exec(ctx, []string{"config", "current-context"}, &stdout, &stderr)
+	err := NewKubectl().Exec(ctx, []string{"config", "current-context"}, &stdout, &stderr)
 	if err != nil {
 		log.Errorf("Error getting current context: ", err)
 		log.Errorf("Stderr: %s", stderr.String())

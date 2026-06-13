@@ -162,7 +162,7 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 			defer func() { _ = pipeWriter.Close() }()
 			params := kubectl.BuildLogsParameters(cmd)
 			params = append(params, args...)
-			if err := kubectl.New().Exec(cmd.Context(), params, pipeWriter, pipeWriter); err != nil {
+			if err := kubectl.NewKubectl().Exec(cmd.Context(), params, pipeWriter, pipeWriter); err != nil {
 				log.Fatalf("Failed to execute kubectl logs command: %s", err)
 				fmt.Fprintln(os.Stderr, err.Error())
 			}

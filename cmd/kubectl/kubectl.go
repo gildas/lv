@@ -10,8 +10,8 @@ import (
 	"github.com/gildas/lv/cmd/common"
 )
 
-// New returns a new kubectl runner
-func New() *common.Runner {
+// NewKubectl returns a new kubectl runner
+func NewKubectl() *common.Runner {
 	return &common.Runner{
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,

@@ -31,7 +31,7 @@ func GetPods(ctx context.Context, cmd *cobra.Command, args []string, toComplete 
 	}
 
 	log.Debugf("Getting pods for completion in namespace %s with context %s and args: %s", kubectlNamespace, kubectlContext, args)
-	err = New().Exec(ctx, []string{"get", "pods", "--context", kubectlContext, "--namespace", kubectlNamespace, "-o", "jsonpath={.items[*].metadata.name}"}, &stdout, &stderr)
+	err = NewKubectl().Exec(ctx, []string{"get", "pods", "--context", kubectlContext, "--namespace", kubectlNamespace, "-o", "jsonpath={.items[*].metadata.name}"}, &stdout, &stderr)
 	if err != nil {
 		log.Errorf("Error getting pods: ", err)
 		log.Errorf("Stderr: %s", stderr.String())

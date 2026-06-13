@@ -31,7 +31,7 @@ func GetApplications(ctx context.Context, cmd *cobra.Command, args []string, toC
 	}
 
 	log.Debugf("Getting applications for completion in namespace %s with context %s and args: %s", kubectlNamespace, kubectlContext, args)
-	err = New().Exec(ctx, []string{"get", "deployments.apps", "--context", kubectlContext, "--namespace", kubectlNamespace, "-o", "jsonpath={.items[*].metadata.labels.app\\.kubernetes\\.io/name}"}, &stdout, &stderr)
+	err = NewKubectl().Exec(ctx, []string{"get", "deployments.apps", "--context", kubectlContext, "--namespace", kubectlNamespace, "-o", "jsonpath={.items[*].metadata.labels.app\\.kubernetes\\.io/name}"}, &stdout, &stderr)
 	if err != nil {
 		log.Errorf("Error getting applications: ", err)
 		log.Errorf("Stderr: %s", stderr.String())
