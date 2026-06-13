@@ -67,7 +67,7 @@ type ExtraLogsOptions struct {
 	Application *flags.EnumFlag
 }
 
-var kubectlLogsFlVags = []string{
+var kubectlLogFlags = []string{
 	"all-containers",
 	"all-pods",
 	"as",
@@ -114,7 +114,7 @@ var kubectlLogsFlVags = []string{
 	"warnings-as-errors",
 }
 
-var kubectlExtraLogsFlVags = []string{
+var kubectlSelectorFlags = []string{
 	"connector",
 	"platform",
 	"provider",
@@ -125,7 +125,7 @@ var kubectlExtraLogsFlVags = []string{
 	"app",
 }
 
-var kubectlExtraLogsSelectors = map[string]string{
+var kubectlSelectors = map[string]string{
 	"application": "app.kubernetes.io/name",
 	"app":         "app.kubernetes.io/name",
 	"connector":   "connector",
@@ -191,12 +191,12 @@ func CreateLogsFlags(cmd *cobra.Command) (options LogsOptions) {
 	return
 }
 
-// CreateExtraLogsFlags creates the extra flags for the kubectl logs command
+// CreateSelectorFlags creates the selector flags for the kubectl logs command
 //
 // # These flags are helpers to build kubectl selectors to select the pods to get logs
 //
 // Caveat: these flags are based on the Kubernetes clusters I typically build. It would be nice to make this configurable
-func CreateExtraLogsFlags(cmd *cobra.Command) (options ExtraLogsOptions) {
+func CreateSelectorFlags(cmd *cobra.Command) (options ExtraLogsOptions) {
 	options.Connector = flags.NewEnumFlagWithFunc(cmd, "", GetResourceLabelsFunc("deployments.apps", "connector"))
 	options.Platform = flags.NewEnumFlagWithFunc(cmd, "", GetResourceLabelsFunc("deployments.apps", "platform"))
 	options.Provider = flags.NewEnumFlagWithFunc(cmd, "", GetResourceLabelsFunc("deployments.apps", "provider"))
@@ -231,9 +231,9 @@ func CreateExtraLogsFlags(cmd *cobra.Command) (options ExtraLogsOptions) {
 
 // HasLogsFlags checks if any of the kubectl logs flags or extra logs flags are present in the command
 func HasLogsFlags(cmd *cobra.Command) bool {
-	return slices.ContainsFunc(kubectlLogsFlVags, func(flag string) bool {
+	return slices.ContainsFunc(kubectlLogFlags, func(flag string) bool {
 		return cmd.Flags().Changed(flag)
-	}) || slices.ContainsFunc(kubectlExtraLogsFlVags, func(flag string) bool {
+	}) || slices.ContainsFunc(kubectlSelectorFlags, func(flag string) bool {
 		return cmd.Flags().Changed(flag)
 	})
 }
@@ -241,7 +241,7 @@ func HasLogsFlags(cmd *cobra.Command) bool {
 // BuildLogsParameters builds the parameters for the kubectl logs command based on the flags present in the command
 func BuildLogsParameters(cmd *cobra.Command) (params []string) {
 	params = []string{"logs"}
-	for _, flag := range kubectlLogsFlVags {
+	for _, flag := range kubectlLogFlags {
 		if cmd.Flags().Changed(flag) {
 			params = append(params, "--"+flag)
 			// If the flag has a value, we need to add it as well
@@ -259,11 +259,11 @@ func BuildLogsParameters(cmd *cobra.Command) (params []string) {
 // BuildSelector builds the Kubernetes selector
 func BuildSelector(cmd *cobra.Command) (selector string) {
 	selectors := []string{}
-	for _, flag := range kubectlExtraLogsFlVags {
+	for _, flag := range kubectlSelectorFlags {
 		if cmd.Flags().Changed(flag) {
 			// If the flag has a value, we need to add it as well
 			if cmd.Flags().Lookup(flag).Value.String() != "" && cmd.Flags().Lookup(flag).Value.Type() != "bool" {
-				selectors = append(selectors, fmt.Sprintf("%s=%s", kubectlExtraLogsSelectors[flag], cmd.Flags().Lookup(flag).Value.String()))
+				selectors = append(selectors, fmt.Sprintf("%s=%s", kubectlSelectors[flag], cmd.Flags().Lookup(flag).Value.String()))
 			}
 		}
 	}

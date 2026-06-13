@@ -79,7 +79,7 @@ func init() {
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.Debug, "debug", false, "forces logging at DEBUG level")
 	RootCmd.PersistentFlags().BoolVarP(&CmdOptions.Verbose, "verbose", "v", false, "runs verbosely if set")
 	CmdOptions.LogsOptions = kubectl.CreateLogsFlags(RootCmd)
-	CmdOptions.ExtraLogsOptions = kubectl.CreateExtraLogsFlags(RootCmd)
+	CmdOptions.ExtraLogsOptions = kubectl.CreateSelectorFlags(RootCmd)
 
 	_ = RootCmd.RegisterFlagCompletionFunc(CmdOptions.Output.CompletionFunc("output"))
 	_ = RootCmd.RegisterFlagCompletionFunc(CmdOptions.Completion.CompletionFunc("completion"))
