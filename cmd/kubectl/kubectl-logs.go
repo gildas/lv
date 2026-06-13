@@ -197,13 +197,13 @@ func CreateLogsFlags(cmd *cobra.Command) (options LogsOptions) {
 //
 // Caveat: these flags are based on the Kubernetes clusters I typically build. It would be nice to make this configurable
 func CreateExtraLogsFlags(cmd *cobra.Command) (options ExtraLogsOptions) {
-	options.Connector = flags.NewEnumFlagWithFunc(cmd, "", GetConnectors)
-	options.Platform = flags.NewEnumFlagWithFunc(cmd, "", GetPlatforms)
-	options.Provider = flags.NewEnumFlagWithFunc(cmd, "", GetProviders)
+	options.Connector = flags.NewEnumFlagWithFunc(cmd, "", GetResourceLabelsFunc("deployments.apps", "connector"))
+	options.Platform = flags.NewEnumFlagWithFunc(cmd, "", GetResourceLabelsFunc("deployments.apps", "platform"))
+	options.Provider = flags.NewEnumFlagWithFunc(cmd, "", GetResourceLabelsFunc("deployments.apps", "provider"))
 	options.Release = flags.NewEnumFlagWithFunc(cmd, "", GetReleases)
-	options.Role = flags.NewEnumFlagWithFunc(cmd, "", GetRoles)
-	options.Tier = flags.NewEnumFlagWithFunc(cmd, "", GetTiers)
-	options.Application = flags.NewEnumFlagWithFunc(cmd, "", GetApplications)
+	options.Role = flags.NewEnumFlagWithFunc(cmd, "", GetResourceLabelsFunc("deployments.apps", "role"))
+	options.Tier = flags.NewEnumFlagWithFunc(cmd, "", GetResourceLabelsFunc("deployments.apps", "tier"))
+	options.Application = flags.NewEnumFlagWithFunc(cmd, "", GetResourceLabelsFunc("deployments.apps", "app\\.kubernetes\\.io/name"))
 
 	cmd.Flags().Var(options.Connector, "connector", "The name of the connector to use for logs")
 	cmd.Flags().Var(options.Platform, "platform", "The name of the platform to use for logs")

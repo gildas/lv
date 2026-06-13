@@ -14,14 +14,14 @@ import (
 )
 
 var resourceTypes = map[string]flags.AllowedFunc{
-	"daemonsets":             GetResourcesFunc("daemonsets.apps"),
-	"deployments":            GetResourcesFunc("deployments.apps"),
-	"jobs":                   GetResourcesFunc("jobs.batch"),
-	"pods":                   GetResourcesFunc("pods"),
-	"replicasets":            GetResourcesFunc("replicasets.apps"),
-	"replicationcontrollers": GetResourcesFunc("replicationcontrollers"),
-	"services":               GetResourcesFunc("services"),
-	"statefulsets":           GetResourcesFunc("statefulsets.apps"),
+	"daemonsets":             GetResourceNamesFunc("daemonsets.apps"),
+	"deployments":            GetResourceNamesFunc("deployments.apps"),
+	"jobs":                   GetResourceNamesFunc("jobs.batch"),
+	"pods":                   GetResourceNamesFunc("pods"),
+	"replicasets":            GetResourceNamesFunc("replicasets.apps"),
+	"replicationcontrollers": GetResourceNamesFunc("replicationcontrollers"),
+	"services":               GetResourceNamesFunc("services"),
+	"statefulsets":           GetResourceNamesFunc("statefulsets.apps"),
 }
 
 // GetPods gets the pods for the current context

@@ -12,10 +12,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// GetResourcesFunc gets the kubernetes resources for the current context
-func GetResourcesFunc(resourceType string) flags.AllowedFunc {
+// GetResourceNamesFunc gets the kubernetes resources for the current context
+func GetResourceNamesFunc(resourceType string) flags.AllowedFunc {
+	return GetResourceLabelsFunc(resourceType, "name")
+}
+
+// GetResourceLabelsFunc gets the kubernetes resources for the current context with a specific label selector
+func GetResourceLabelsFunc(resourceType string, labelSelector string) flags.AllowedFunc {
+	if labelSelector != "name" {
+		labelSelector = "labels." + labelSelector
+	}
 	return func(ctx context.Context, cmd *cobra.Command, args []string, toComplete string) ([]string, error) {
-		log := logger.Must(logger.FromContext(ctx)).Child("kubectl", "resources", "resourceType", resourceType)
+		log := logger.Must(logger.FromContext(ctx)).Child("kubectl", "resources", "resourceType", resourceType, "labelSelector", labelSelector)
 		var stdout, stderr bytes.Buffer
 
 		kubectlContext, err := GetCurrentContext(ctx, cmd)
@@ -32,13 +40,14 @@ func GetResourcesFunc(resourceType string) flags.AllowedFunc {
 			return nil, err
 		}
 
-		log.Debugf("Getting %s for completion in namespace %s with context %s and args: %s", resourceType, kubectlNamespace, kubectlContext, args)
-		err = NewKubectl().Exec(ctx, []string{"get", resourceType, "--context", kubectlContext, "--namespace", kubectlNamespace, "-o", "jsonpath='{.items[*].metadata.name}'"}, &stdout, &stderr)
+		log.Debugf("Getting %s for completion in namespace %s with context %s, label selector %s and args: %s", resourceType, kubectlNamespace, kubectlContext, labelSelector, args)
+		err = NewKubectl().Exec(ctx, []string{"get", resourceType, "--context", kubectlContext, "--namespace", kubectlNamespace, "-o", "jsonpath={.items[*].metadata." + labelSelector + "}"}, &stdout, &stderr)
 		if err != nil {
 			log.Errorf("Error getting %s: ", resourceType, err)
 			log.Errorf("Stderr: %s", stderr.String())
 			return nil, err
 		}
+		log.Debugf("Raw resources output: %s", stdout.String())
 
 		resources := []string{}
 		for resource := range strings.FieldsSeq(stdout.String()) {
