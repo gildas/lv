@@ -99,14 +99,14 @@ func validRootArgs(cmd *cobra.Command, args []string, toComplete string) ([]stri
 
 	// If the command flags indicate we are using Kubernetes resources, we should complete pods
 	if kubectl.HasLogsFlags(cmd) {
-		log.Debugf("Kubectl logs flags detected, completing pods for args: %s", args)
+		log.Debugf("Kubectl logs flags detected, completing pods")
 		if pods, err := kubectl.GetPods(cmd.Context(), cmd, args, toComplete); err == nil {
 			return pods, cobra.ShellCompDirectiveNoFileComp
 		}
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
 	// If not, we should complete files in the current directory
-	log.Debugf("Letting the shell to complete the files in the current directory for args: %s", args)
+	log.Debugf("Letting the shell to complete the files in the current directory for args: %s, toComplete: %s", args, toComplete)
 	return nil, cobra.ShellCompDirectiveDefault
 }
 
