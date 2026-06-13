@@ -250,6 +250,14 @@ func BuildLogsParameters(cmd *cobra.Command) (params []string) {
 			}
 		}
 	}
+	if selector := BuildSelector(cmd); len(selector) > 0 {
+		params = append(params, "--selector", selector)
+	}
+	return
+}
+
+// BuildSelector builds the Kubernetes selector
+func BuildSelector(cmd *cobra.Command) (selector string) {
 	selectors := []string{}
 	for _, flag := range kubectlExtraLogsFlVags {
 		if cmd.Flags().Changed(flag) {
@@ -259,8 +267,5 @@ func BuildLogsParameters(cmd *cobra.Command) (params []string) {
 			}
 		}
 	}
-	if len(selectors) > 0 {
-		params = append(params, "--selector", strings.Join(selectors, ","))
-	}
-	return
+	return strings.Join(selectors, ",")
 }
