@@ -3,6 +3,7 @@ package kubectl
 import (
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/gildas/go-flags"
@@ -60,6 +61,7 @@ type ExtraLogsOptions struct {
 	Connector   *flags.EnumFlag
 	Platform    *flags.EnumFlag
 	Provider    *flags.EnumFlag
+	Release     *flags.EnumFlag
 	Role        *flags.EnumFlag
 	Tier        *flags.EnumFlag
 	Application *flags.EnumFlag
@@ -118,6 +120,7 @@ var kubectlExtraLogsFlVags = []string{
 	"provider",
 	"role",
 	"tier",
+	"release",
 	"application",
 	"app",
 }
@@ -130,6 +133,7 @@ var kubectlExtraLogsSelectors = map[string]string{
 	"provider":    "provider",
 	"role":        "role",
 	"tier":        "tier",
+	"release":     "app.kubernetes.io/instance",
 }
 
 // CreateLogsFlags creates the flags for the kubectl logs command
@@ -196,6 +200,7 @@ func CreateExtraLogsFlags(cmd *cobra.Command) (options ExtraLogsOptions) {
 	options.Connector = flags.NewEnumFlagWithFunc(cmd, "", GetConnectors)
 	options.Platform = flags.NewEnumFlagWithFunc(cmd, "", GetPlatforms)
 	options.Provider = flags.NewEnumFlagWithFunc(cmd, "", GetProviders)
+	options.Release = flags.NewEnumFlagWithFunc(cmd, "", GetReleases)
 	options.Role = flags.NewEnumFlagWithFunc(cmd, "", GetRoles)
 	options.Tier = flags.NewEnumFlagWithFunc(cmd, "", GetTiers)
 	options.Application = flags.NewEnumFlagWithFunc(cmd, "", GetApplications)
@@ -207,12 +212,16 @@ func CreateExtraLogsFlags(cmd *cobra.Command) (options ExtraLogsOptions) {
 	cmd.Flags().Var(options.Tier, "tier", "The name of the tier to use for logs")
 	cmd.Flags().Var(options.Application, "application", "The name of the application to use for logs")
 	cmd.Flags().Var(options.Application, "app", "The name of the application to use for logs")
+	if IsHelmAvailable() {
+		cmd.Flags().Var(options.Release, "release", "The name of the Helm release to use for logs")
+	}
 
 	cmd.MarkFlagsMutuallyExclusive("connector", "platform", "provider", "application", "app", "role", "tier")
 
 	_ = cmd.RegisterFlagCompletionFunc(options.Connector.CompletionFunc("connector"))
 	_ = cmd.RegisterFlagCompletionFunc(options.Platform.CompletionFunc("platform"))
 	_ = cmd.RegisterFlagCompletionFunc(options.Provider.CompletionFunc("provider"))
+	_ = cmd.RegisterFlagCompletionFunc(options.Release.CompletionFunc("release"))
 	_ = cmd.RegisterFlagCompletionFunc(options.Role.CompletionFunc("role"))
 	_ = cmd.RegisterFlagCompletionFunc(options.Tier.CompletionFunc("tier"))
 	_ = cmd.RegisterFlagCompletionFunc(options.Application.CompletionFunc("application"))
@@ -241,18 +250,17 @@ func BuildLogsParameters(cmd *cobra.Command) (params []string) {
 			}
 		}
 	}
-	selector := ""
+	selectors := []string{}
 	for _, flag := range kubectlExtraLogsFlVags {
 		if cmd.Flags().Changed(flag) {
 			// If the flag has a value, we need to add it as well
 			if cmd.Flags().Lookup(flag).Value.String() != "" && cmd.Flags().Lookup(flag).Value.Type() != "bool" {
-				selector = fmt.Sprintf("%s=%s", kubectlExtraLogsSelectors[flag], cmd.Flags().Lookup(flag).Value.String())
-				break
+				selectors = append(selectors, fmt.Sprintf("%s=%s", kubectlExtraLogsSelectors[flag], cmd.Flags().Lookup(flag).Value.String()))
 			}
 		}
 	}
-	if len(selector) > 0 {
-		params = append(params, "--selector", selector)
+	if len(selectors) > 0 {
+		params = append(params, "--selector", strings.Join(selectors, ","))
 	}
 	return
 }
