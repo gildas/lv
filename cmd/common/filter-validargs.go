@@ -1,6 +1,7 @@
 package common
 
 import (
+	"sort"
 	"strings"
 
 	"github.com/gildas/go-core"
@@ -21,5 +22,6 @@ func FilterValidArgs(valid, args []string, toComplete string) []string {
 			return !core.Contains(args, value)
 		})
 	}
+	sort.Strings(valid)
 	return valid
 }
