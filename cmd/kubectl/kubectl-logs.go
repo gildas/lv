@@ -8,6 +8,7 @@ import (
 
 	"github.com/gildas/go-flags"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 type LogsOptions struct {
@@ -239,7 +240,7 @@ func HasLogsFlags(cmd *cobra.Command) bool {
 func BuildLogsParameters(cmd *cobra.Command) (params []string) {
 	params = []string{"logs"}
 	// --follow is common for both kubectl and files, so we need to add it here
-	if cmd.Flags().Changed("follow") {
+	if viper.GetBool("follow") {
 		params = append(params, "--follow")
 	}
 	for _, flag := range kubectlLogFlags {

@@ -24,7 +24,7 @@ import (
 type OutputOptions struct {
 	LogLevel  string
 	Filter    string
-	Output    *flags.EnumFlag
+	Output    string
 	Location  *time.Location
 	UseColors bool
 }
@@ -39,6 +39,7 @@ var CmdOptions struct {
 	CipherKey      string
 	LogDestination string
 	Timezone       string
+	Output         *flags.EnumFlag
 	UseKubernetes  bool
 	Follow         bool
 	UsePager       bool
@@ -73,7 +74,7 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&CmdOptions.Filter, "condition", "", "Run each log message through the filter.")
 	RootCmd.PersistentFlags().StringVarP(&CmdOptions.CipherKey, "key", "k", "", "Use the given key to decrypt obfuscated log entries. The key must be 16, 24, or 32 bytes long.")
 	RootCmd.PersistentFlags().BoolP("local", "L", false, "Display time field in local time, rather than UTC.")
-	RootCmd.PersistentFlags().StringVar(&CmdOptions.Timezone, "time", "", "Display time field in the given timezone.")
+	RootCmd.PersistentFlags().StringVar(&CmdOptions.Timezone, "time", "", "Display time field in the given timezone (by default local time).")
 	RootCmd.PersistentFlags().BoolVarP(&CmdOptions.Follow, "follow", "f", false, "Specify if the logs should be streamed (kubernetes or files)")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UsePager, "no-pager", true, "Do not pipe output into a pager. By default, the output is piped throug `less` (or $PAGER if set), if stdout is a TTY")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UseColors, "no-color", false, "Do not colorize output. By default, the output is colorized if stdout is a TTY")
@@ -125,7 +126,7 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 		return generateCompletion(cmd, CmdOptions.Completion.Value)
 	}
 
-	CmdOptions.UseColors = isStdoutTTY() || viper.GetBool("color") || cmd.Flags().Changed("color")
+	CmdOptions.UseColors = isStdoutTTY() || viper.GetBool("color")
 	if cmd.Flags().Changed("no-color") {
 		CmdOptions.UseColors = false
 	}
@@ -133,7 +134,7 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 	if cmd.Flags().Changed("no-pager") || viper.GetBool("no-pager") {
 		CmdOptions.UsePager = false
 	}
-	CmdOptions.Output.Value = viper.GetString("output")
+	CmdOptions.OutputOptions.Output = viper.GetString("output")
 
 	if len(viper.GetString("obfuscationKey")) > 0 {
 		cipherBlock, err := aes.NewCipher([]byte(viper.GetString("obfuscationKey")))
@@ -144,13 +145,13 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 		log.SetObfuscationKey(cipherBlock)
 	}
 
-	if viper.GetBool("local") {
-		log.Infof("Displaying local time")
+	if cmd.Flags().Changed("local") {
 		CmdOptions.Location = time.Local
 	} else if CmdOptions.Location, err = ParseLocation(viper.GetString("timezone")); err != nil {
 		log.Fatalf("Failed to load timezone %s: %s", viper.GetString("timezone"), err)
 		return err
 	}
+	viper.Set("timezone", CmdOptions.Location.String())
 	log.Infof("Displaying time at location: %s", CmdOptions.Location)
 
 	// If some of the Kubectl Logs flags are set, we should execute kubectl logs command and read from its output
@@ -175,7 +176,7 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 	} else if len(args) == 0 {
 		log.Infof("Reading from stdin")
 		reader = bufio.NewReader(os.Stdin)
-	} else if cmd.Flags().Changed("follow") {
+	} else if viper.GetBool("follow") {
 		log.Infof("Following file %s", args[0])
 		if err != nil {
 			return errors.Join(fmt.Errorf("Failed to tail file %s", args[0]), err)

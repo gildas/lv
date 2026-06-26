@@ -53,20 +53,17 @@ func initializeConfiguration(cmd *cobra.Command) (err error) {
 		viper.SetConfigName(".logviewer")
 	}
 
-	_ = viper.BindPFlag("follow", RootCmd.PersistentFlags().Lookup("follow"))
-	_ = viper.BindPFlag("local", RootCmd.PersistentFlags().Lookup("local"))
-	_ = viper.BindPFlag("timezone", RootCmd.PersistentFlags().Lookup("time"))
-	_ = viper.BindPFlag("output", RootCmd.PersistentFlags().Lookup("output"))
 	_ = viper.BindPFlag("color", RootCmd.PersistentFlags().Lookup("color"))
+	_ = viper.BindPFlag("follow", RootCmd.PersistentFlags().Lookup("follow"))
 	_ = viper.BindPFlag("obfuscationKey", RootCmd.PersistentFlags().Lookup("key"))
-	viper.SetDefault("local", false)
-	viper.SetDefault("timezone", "UTC")
-	viper.SetDefault("output", "long")
+	_ = viper.BindPFlag("output", RootCmd.PersistentFlags().Lookup("output"))
+	_ = viper.BindPFlag("timezone", RootCmd.PersistentFlags().Lookup("time"))
 	viper.SetDefault("color", true)
 	viper.SetDefault("follow", false)
+	viper.SetDefault("output", "long")
+	viper.SetDefault("timezone", "local")
 
 	viper.SetEnvPrefix("LV")
-	_ = viper.BindEnv("local", "obfuscationKey")
 	viper.AutomaticEnv() // read in environment variables that match
 
 	err = viper.ReadInConfig()
