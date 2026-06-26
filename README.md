@@ -212,10 +212,23 @@ Here is an example of a configuration file:
 
 ```yaml
 color: true
-local: true
+timezone: Europe/Paris
 output: short
 obfuscationKey: 1231213
 ```
+
+Here are all the configuration options you can use in the configuration file:
+
+- `color`: (boolean) to force colorization of the output,  
+  environment variable `LV_COLOR`
+- `follow`: (boolean) to follow the logs in real-time,  
+  environment variable `LV_FOLLOW`
+- `obfuscationKey`: (string) to specify the key used to decrypt obfuscated log entries,  
+  environment variable `LV_OBFUSCATIONKEY`
+- `output`: (string) to specify the output format. One of `long`, `logviewer`, `short`, `simple`, `html`, `serve`, `server`,  
+  environment variable `LV_OUTPUT`
+- `timezone`: (string) to display the time in a specific timezone,  
+  environment variable `LV_TIMEZONE`
 
 The environment variables and the command line flags have precedence over the configuration file.
 
