@@ -25,7 +25,6 @@ type LogsOptions struct {
 	Container                    string
 	Context                      *flags.EnumFlag
 	DisableCompression           bool
-	Follow                       bool
 	IgnoreErrors                 bool
 	InsecureSkipTLSVerify        bool
 	InsecureSkipTLSVerifyBackend bool
@@ -82,7 +81,6 @@ var kubectlLogFlags = []string{
 	"container",
 	"context",
 	"disable-compression",
-	"follow",
 	"ignore-errors",
 	"insecure-skip-tls-verify",
 	"insecure-skip-tls-verify-backend",
@@ -155,7 +153,6 @@ func CreateLogsFlags(cmd *cobra.Command) (options LogsOptions) {
 	cmd.Flags().StringVarP(&options.Container, "container", "c", "", "Print the logs of this container")
 	cmd.Flags().Var(options.Context, "context", "The name of the kubeconfig context to use")
 	cmd.Flags().BoolVar(&options.DisableCompression, "disable-compression", false, "If true, opt-out of response compression for all requests to the server")
-	cmd.Flags().BoolVarP(&options.Follow, "follow", "f", false, "Specify if the logs should be streamed")
 	cmd.Flags().BoolVar(&options.IgnoreErrors, "ignore-errors", false, "If watching / following pod logs, allow for any errors that occur to be non-fatal")
 	cmd.Flags().BoolVar(&options.InsecureSkipTLSVerify, "insecure-skip-tls-verify", false, "If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure")
 	cmd.Flags().BoolVar(&options.InsecureSkipTLSVerifyBackend, "insecure-skip-tls-verify-backend", false, "Skip verifying the identity of the kubelet that logs are requested from.  In theory, an attacker could provide invalid log content back. You might want to use this if your kubelet serving certificates have expired.")
@@ -241,6 +238,10 @@ func HasLogsFlags(cmd *cobra.Command) bool {
 // BuildLogsParameters builds the parameters for the kubectl logs command based on the flags present in the command
 func BuildLogsParameters(cmd *cobra.Command) (params []string) {
 	params = []string{"logs"}
+	// --follow is common for both kubectl and files, so we need to add it here
+	if cmd.Flags().Changed("follow") {
+		params = append(params, "--follow")
+	}
 	for _, flag := range kubectlLogFlags {
 		if cmd.Flags().Changed(flag) {
 			params = append(params, "--"+flag)

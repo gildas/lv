@@ -16,6 +16,7 @@ import (
 	"github.com/gildas/go-flags"
 	"github.com/gildas/go-logger"
 	"github.com/gildas/lv/cmd/kubectl"
+	"github.com/gildas/lv/cmd/tail"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -38,6 +39,8 @@ var CmdOptions struct {
 	CipherKey      string
 	LogDestination string
 	Timezone       string
+	UseKubernetes  bool
+	Follow         bool
 	UsePager       bool
 	Verbose        bool
 	Debug          bool
@@ -71,9 +74,11 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&CmdOptions.CipherKey, "key", "k", "", "Use the given key to decrypt obfuscated log entries. The key must be 16, 24, or 32 bytes long.")
 	RootCmd.PersistentFlags().BoolP("local", "L", false, "Display time field in local time, rather than UTC.")
 	RootCmd.PersistentFlags().StringVar(&CmdOptions.Timezone, "time", "", "Display time field in the given timezone.")
+	RootCmd.PersistentFlags().BoolVarP(&CmdOptions.Follow, "follow", "f", false, "Specify if the logs should be streamed (kubernetes or files)")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UsePager, "no-pager", true, "Do not pipe output into a pager. By default, the output is piped throug `less` (or $PAGER if set), if stdout is a TTY")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UseColors, "no-color", false, "Do not colorize output. By default, the output is colorized if stdout is a TTY")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UseColors, "color", true, "Colorize output always, even if the output stream is not a TTY.")
+	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UseKubernetes, "k8s", false, "Use Kubernetes resources instead of files. This flag is automatically set when any of the kubectl logs flags are used.")
 	RootCmd.PersistentFlags().VarP(CmdOptions.Output, "output", "o", "output mode/format. One of long, json, json-N, logviewer, inspect, short, simple, html, serve, server")
 	RootCmd.PersistentFlags().StringVar(&CmdOptions.LogDestination, "log", "", "where logs are writen if given (by default, no log is generated)")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.Debug, "debug", false, "forces logging at DEBUG level")
@@ -149,7 +154,7 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 	log.Infof("Displaying time at location: %s", CmdOptions.Location)
 
 	// If some of the Kubectl Logs flags are set, we should execute kubectl logs command and read from its output
-	if kubectl.HasLogsFlags(cmd) {
+	if kubectl.HasLogsFlags(cmd) || CmdOptions.UseKubernetes {
 		pipeReader, pipeWriter, err := os.Pipe()
 		if err != nil {
 			log.Fatalf("Failed to create pipe: %s", err)
@@ -170,6 +175,27 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 	} else if len(args) == 0 {
 		log.Infof("Reading from stdin")
 		reader = bufio.NewReader(os.Stdin)
+	} else if cmd.Flags().Changed("follow") {
+		log.Infof("Following file %s", args[0])
+		if err != nil {
+			return errors.Join(fmt.Errorf("Failed to tail file %s", args[0]), err)
+		}
+		pipeReader, pipeWriter, err := os.Pipe()
+		if err != nil {
+			log.Fatalf("Failed to create pipe: %s", err)
+			return err
+		}
+		reader = bufio.NewReader(pipeReader)
+
+		log.Infof("Executing tail command with the given flags")
+		go func() {
+			defer func() { _ = pipeWriter.Close() }()
+			params := []string{args[0]}
+			if err := tail.NewTailer().Exec(cmd.Context(), params, pipeWriter, pipeWriter); err != nil {
+				log.Fatalf("Failed to execute tail command: %s", err)
+				fmt.Fprintln(os.Stderr, err.Error())
+			}
+		}()
 	} else {
 		file, err := os.Open(args[0])
 		if err != nil {

@@ -53,6 +53,7 @@ func initializeConfiguration(cmd *cobra.Command) (err error) {
 		viper.SetConfigName(".logviewer")
 	}
 
+	_ = viper.BindPFlag("follow", RootCmd.PersistentFlags().Lookup("follow"))
 	_ = viper.BindPFlag("local", RootCmd.PersistentFlags().Lookup("local"))
 	_ = viper.BindPFlag("timezone", RootCmd.PersistentFlags().Lookup("time"))
 	_ = viper.BindPFlag("output", RootCmd.PersistentFlags().Lookup("output"))
@@ -62,6 +63,7 @@ func initializeConfiguration(cmd *cobra.Command) (err error) {
 	viper.SetDefault("timezone", "UTC")
 	viper.SetDefault("output", "long")
 	viper.SetDefault("color", true)
+	viper.SetDefault("follow", false)
 
 	viper.SetEnvPrefix("LV")
 	_ = viper.BindEnv("local", "obfuscationKey")
