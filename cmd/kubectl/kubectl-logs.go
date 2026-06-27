@@ -229,6 +229,9 @@ func CreateSelectorFlags(cmd *cobra.Command) (options ExtraLogsOptions) {
 
 // HasLogsFlags checks if any of the kubectl logs flags or extra logs flags are present in the command
 func HasLogsFlags(cmd *cobra.Command) bool {
+	if cmd.Flag("k8s").Changed {
+		return true
+	}
 	return slices.ContainsFunc(kubectlLogFlags, func(flag string) bool {
 		return cmd.Flags().Changed(flag)
 	}) || slices.ContainsFunc(kubectlSelectorFlags, func(flag string) bool {
