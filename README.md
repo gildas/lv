@@ -232,6 +232,25 @@ Here are all the configuration options you can use in the configuration file:
 
 The environment variables and the command line flags have precedence over the configuration file.
 
+#### Custom Selectors
+
+You can also configure custom selectors in the configuration file. Here is an example of a configuration file with custom selectors:
+
+```yaml
+selectors:
+  - name: application                # The name of the selector to use in the command line
+    aliases: [app]                   # Aliases for the selector that can be used in the command line
+    label: "app.kubernetes.io/name"  # The label to use for the selector in kubectl logs command.
+                                     # If not specified, the name of the selector will be used.
+    usage: "select application logs" # The usage of the selector to display in the command line help
+```
+
+This would be used in the command line as follows:
+
+```bash
+lv --follow --tail -1 --application=my-app
+```
+
 ### Completion
 
 `lv` supports shell completion for `bash`, `fish`, `PowerShell`, and `zsh`.
@@ -305,4 +324,3 @@ Not all the output formats are implemented yet.
 ## TODO
 
 - Add support to read logs from `aws`, `gcp` and `azure` services.
-- Add support for `k8s` logs.
