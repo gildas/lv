@@ -71,7 +71,7 @@ lv --follow /path/to/logfile
 lv -f /path/to/logfile
 ```
 
-By default, `lv` will display the log in a pager with colors, if the output is a terminal (you can turn off the pager with `--no-pager`). The pager is also not used when using Kubernetes logs. Any line that does cannot be unmarshaled in one of the supported format will be displayed as raw text.
+By default, `lv` will display the log in a pager with colors, if the output is a terminal (you can turn off the pager with `--no-pager`). The pager is also not used when using Kubernetes logs. Any line that cannot be unmarshaled in one of the supported format will be displayed as raw text.
 
 It will also display the time in UTC. you can display the time in local time with the `--local` flag or use any timezone of your preference with `--time xx` where `xx` is the name of the timezone, a time difference from UTC.
 
