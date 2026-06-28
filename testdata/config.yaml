@@ -1,5 +1,5 @@
 follow: true  # Follow logs in real-time (files and kubectl)
-local:  true  # Display time in local timezone
+timezone:  local  # Display time in local timezone
 output: short # Display Log entries in short format
 
 selectors:
