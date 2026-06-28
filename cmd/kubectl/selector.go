@@ -25,8 +25,8 @@ func InitializeSelectors(cmd *cobra.Command) error {
 	if err := viper.UnmarshalKey("selectors", &kubectlSelectors); err != nil {
 		return err
 	}
-	for _, selector := range kubectlSelectors {
-		selector.Register(cmd)
+	for i := range kubectlSelectors {
+		kubectlSelectors[i].Register(cmd)
 	}
 	return nil
 }

@@ -39,7 +39,7 @@ type LogsOptions struct {
 	Namespace                    *flags.EnumFlag
 	Password                     string
 	PodRunningTimeout            time.Duration
-	Prefix                       string
+	Prefix                       bool
 	Previous                     bool
 	Profile                      string
 	ProfileOutput                string
@@ -137,7 +137,7 @@ func CreateLogsFlags(cmd *cobra.Command) (options LogsOptions) {
 	cmd.Flags().VarP(options.Namespace, "namespace", "n", "If present, the namespace scope for this CLI request")
 	cmd.Flags().StringVar(&options.Password, "password", "", "Password for basic authentication to the API server.")
 	cmd.Flags().DurationVar(&options.PodRunningTimeout, "pod-running-timeout", 0, "The length of time (like 5s, 2m, or 3h, higher than zero) to wait until at least one pod is running")
-	cmd.Flags().StringVar(&options.Prefix, "prefix", "", "Prefix each log line with the log source (pod name and container name)")
+	cmd.Flags().BoolVar(&options.Prefix, "prefix", false, "Prefix each log line with the log source (pod name and container name)")
 	cmd.Flags().BoolVarP(&options.Previous, "previous", "p", false, "If true, print the logs for the previous instance of the container in a pod if it exists.")
 	cmd.Flags().StringVar(&options.Profile, "profile", "", "Name of profile to capture. One of (none|cpu|heap|goroutine|threadcreate|block|mutex|trace)")
 	cmd.Flags().StringVar(&options.ProfileOutput, "profile-output", "", "Name of the file to write the profile to")
