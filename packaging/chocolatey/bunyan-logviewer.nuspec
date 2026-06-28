@@ -3,7 +3,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>bunyan-logviewer</id>
-    <version>0.3.4</version>
+    <version>0.4.0</version>
     <owners>bzh_nihon</owners>
     <title>logviewer (Install)</title>
     <authors>Gildas Cherruel</authors>
