@@ -33,7 +33,6 @@ type OutputOptions struct {
 var CmdOptions struct {
 	OutputOptions
 	kubectl.LogsOptions
-	kubectl.ExtraLogsOptions
 	Completion     *flags.EnumFlag
 	ConfigFile     string
 	CipherKey      string
@@ -85,7 +84,11 @@ func init() {
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.Debug, "debug", false, "forces logging at DEBUG level")
 	RootCmd.PersistentFlags().BoolVarP(&CmdOptions.Verbose, "verbose", "v", false, "runs verbosely if set")
 	CmdOptions.LogsOptions = kubectl.CreateLogsFlags(RootCmd)
-	CmdOptions.ExtraLogsOptions = kubectl.CreateSelectorFlags(RootCmd)
+
+	if err := InitializeConfiguration(RootCmd); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to initialize configuration: %s\n", err)
+		os.Exit(1)
+	}
 
 	_ = RootCmd.RegisterFlagCompletionFunc(CmdOptions.Output.CompletionFunc("output"))
 	_ = RootCmd.RegisterFlagCompletionFunc(CmdOptions.Completion.CompletionFunc("completion"))
@@ -122,6 +125,7 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 	log := logger.Must(logger.FromContext(cmd.Context()))
 	var reader *bufio.Reader
 
+	log.Infof("Config File: %s", viper.ConfigFileUsed())
 	if cmd.Flags().Changed("completion") {
 		return generateCompletion(cmd, CmdOptions.Completion.Value)
 	}
@@ -155,7 +159,7 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 	log.Infof("Displaying time at location: %s", CmdOptions.Location)
 
 	// If some of the Kubectl Logs flags are set, we should execute kubectl logs command and read from its output
-	if kubectl.HasLogsFlags(cmd) || CmdOptions.UseKubernetes {
+	if kubectl.HasLogsFlags(cmd) {
 		pipeReader, pipeWriter, err := os.Pipe()
 		if err != nil {
 			log.Fatalf("Failed to create pipe: %s", err)

@@ -4,6 +4,7 @@ import (
 	"github.com/gildas/go-flags"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 )
 
 type Selectors []Selector
@@ -19,12 +20,41 @@ type Selector struct {
 
 var kubectlSelectors Selectors
 
+// InitializeSelectors initializes the selectors by unmarshalling the configuration and registering them to the command
+func InitializeSelectors(cmd *cobra.Command) error {
+	if err := viper.UnmarshalKey("selectors", &kubectlSelectors); err != nil {
+		return err
+	}
+	for _, selector := range kubectlSelectors {
+		selector.Register(cmd)
+	}
+	return nil
+}
+
+// HasFlag checks if any of the selectors has a flag set in the command line
+func (selectors Selectors) HasFlag(cmd *cobra.Command) bool {
+	for _, selector := range selectors {
+		if _, found := selector.HasFlag(cmd); found {
+			return true
+		}
+	}
+	return false
+}
+
 // Register registers the selector flags to the given command
 func (selector *Selector) Register(cmd *cobra.Command) {
 	selector.register(cmd, selector.Name, selector.Usage)
 	for _, alias := range selector.Aliases {
 		selector.register(cmd, alias, selector.Usage)
 	}
+}
+
+// GetLabel returns the label of the selector, used to filter resources
+func (selector Selector) GetLabel() string {
+	if len(selector.Label) > 0 {
+		return selector.Label
+	}
+	return selector.Name
 }
 
 // HasFlag checks if the selector has a flag set in the command line
@@ -40,20 +70,12 @@ func (selector Selector) HasFlag(cmd *cobra.Command) (name string, ok bool) {
 	return "", false
 }
 
-// HasFlag checks if any of the selectors has a flag set in the command line
-func (selectors Selectors) HasFlag(cmd *cobra.Command) bool {
-	for _, selector := range selectors {
-		if _, found := selector.HasFlag(cmd); found {
-			return true
-		}
-	}
-	return false
-}
-
 // register registers a flag for the selector to the given command
 func (selector *Selector) register(cmd *cobra.Command, name, usage string) {
 	value := flags.NewEnumFlagWithFunc(cmd, "", GetResourceLabelsFunc("deployments.apps", name))
-	cmd.Flags().Var(value, name, usage)
+	if cmd.Flags().Lookup(name) == nil {
+		cmd.Flags().Var(value, name, usage)
+	}
 	_ = cmd.RegisterFlagCompletionFunc(value.CompletionFunc(name))
 	selector.Value = value
 }

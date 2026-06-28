@@ -71,7 +71,7 @@ func GetPods(ctx context.Context, cmd *cobra.Command, args []string, toComplete 
 		}
 	}
 	params := []string{"get", "pods", "--context", kubectlContext, "--namespace", kubectlNamespace}
-	if selector := BuildSelector(cmd); len(selector) > 0 {
+	if selector := BuildSelectorArgs(cmd); len(selector) > 0 {
 		params = append(params, "--selector", selector)
 	}
 	params = append(params, "-o", "jsonpath={.items[*].metadata.name}")

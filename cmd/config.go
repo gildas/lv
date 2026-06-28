@@ -8,18 +8,19 @@ import (
 	"strings"
 
 	"github.com/gildas/go-logger"
+	"github.com/gildas/lv/cmd/kubectl"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 // Initialize configure the logger and load the Viper Configuration
 func Initialize(cmd *cobra.Command) (err error) {
-	initializeLogger(cmd)
-	return initializeConfiguration(cmd)
+	InitializeLogger(cmd)
+	return InitializeConfiguration(cmd)
 }
 
-// initializeLogger configures the logger based on the command line flags and environment variables
-func initializeLogger(cmd *cobra.Command) {
+// InitializeLogger configures the logger based on the command line flags and environment variables
+func InitializeLogger(cmd *cobra.Command) {
 	log := logger.Must(logger.FromContext(cmd.Context()))
 
 	// Use persistent flags instead
@@ -36,12 +37,10 @@ func initializeLogger(cmd *cobra.Command) {
 	}
 }
 
-// initializeConfiguration loads the configuration file and profiles
-func initializeConfiguration(cmd *cobra.Command) (err error) {
-	log := logger.Must(logger.FromContext(cmd.Context()))
-
+// InitializeConfiguration loads the configuration file and profiles
+func InitializeConfiguration(cmd *cobra.Command) (err error) {
 	viper.SetConfigType("yaml")
-	if cmd.Root().PersistentFlags().Changed("config") {
+	if cmd != nil && cmd.Root().PersistentFlags().Changed("config") {
 		viper.SetConfigFile(cmd.Root().PersistentFlags().Lookup("config").Value.String())
 	} else if configDir, _ := os.UserConfigDir(); len(configDir) > 0 {
 		viper.AddConfigPath(filepath.Join(configDir, "logviewer"))
@@ -66,13 +65,13 @@ func initializeConfiguration(cmd *cobra.Command) (err error) {
 	viper.SetEnvPrefix("LV")
 	viper.AutomaticEnv() // read in environment variables that match
 
-	err = viper.ReadInConfig()
-	if verr, ok := err.(viper.ConfigFileNotFoundError); ok {
-		log.Warnf("Config file not found: %s", verr)
-	} else if err != nil {
-		return errors.Join(errors.New("Failed to read config file"), err)
-	} else {
-		log.Infof("Config File: %s", viper.ConfigFileUsed())
+	if err = viper.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			return errors.Join(errors.New("Failed to read config file"), err)
+		}
+	}
+	if err := kubectl.InitializeSelectors(cmd); err != nil {
+		return errors.Join(errors.New("Failed to initialize selectors"), err)
 	}
 	return nil
 }
