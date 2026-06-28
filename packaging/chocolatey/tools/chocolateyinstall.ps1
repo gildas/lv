@@ -7,7 +7,7 @@ $packageArgs = @{
   fileType      = 'exe'
   file64        = "$toolsDir\bunyan-logviewer-0.4.0-windows-amd64.7z"
   softwareName  = 'lv*'
-  checksum64    = '846e82ea17183adb8f856e0d91d474758ac507b6ad2aa0723f8f1bf42ac9bed2'
+  checksum64    = '5fdafd726ab908d80550409033adde4af7baa1bfada741e6178a5c6eb3721c50'
   checksumType64= 'sha256'
 }
 

@@ -14,7 +14,7 @@ The Package can ve verified by checking the following:
 
 2. You can verify the integrity of the downloaded file by checking its SHA256 hash:
 
-  846e82ea17183adb8f856e0d91d474758ac507b6ad2aa0723f8f1bf42ac9bed2
+  5fdafd726ab908d80550409033adde4af7baa1bfada741e6178a5c6eb3721c50
 
   with the PowerShell function `Get-FileHash` or the Chocolatey `checksum.exe` utility.
 
