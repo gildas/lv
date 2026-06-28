@@ -43,9 +43,9 @@ func (selectors Selectors) HasFlag(cmd *cobra.Command) bool {
 
 // Register registers the selector flags to the given command
 func (selector *Selector) Register(cmd *cobra.Command) {
-	selector.register(cmd, selector.Name, selector.Usage)
+	selector.register(cmd, selector.Name)
 	for _, alias := range selector.Aliases {
-		selector.register(cmd, alias, selector.Usage)
+		selector.register(cmd, alias)
 	}
 }
 
@@ -71,10 +71,10 @@ func (selector Selector) HasFlag(cmd *cobra.Command) (name string, ok bool) {
 }
 
 // register registers a flag for the selector to the given command
-func (selector *Selector) register(cmd *cobra.Command, name, usage string) {
-	value := flags.NewEnumFlagWithFunc(cmd, "", GetResourceLabelsFunc("deployments.apps", name))
+func (selector *Selector) register(cmd *cobra.Command, name string) {
+	value := flags.NewEnumFlagWithFunc(cmd, "", GetResourceLabelsFunc("deployments.apps", selector.GetLabel()))
 	if cmd.Flags().Lookup(name) == nil {
-		cmd.Flags().Var(value, name, usage)
+		cmd.Flags().Var(value, name, selector.Usage)
 	}
 	_ = cmd.RegisterFlagCompletionFunc(value.CompletionFunc(name))
 	selector.Value = value

@@ -20,7 +20,7 @@ func GetResourceNamesFunc(resourceType string) flags.AllowedFunc {
 // GetResourceLabelsFunc gets the kubernetes resources for the current context with a specific label selector
 func GetResourceLabelsFunc(resourceType string, labelSelector string) flags.AllowedFunc {
 	if labelSelector != "name" {
-		labelSelector = "labels." + labelSelector
+		labelSelector = "labels." + strings.ReplaceAll(labelSelector, ".", "\\.")
 	}
 	return func(ctx context.Context, cmd *cobra.Command, args []string, toComplete string) ([]string, error) {
 		log := logger.Must(logger.FromContext(ctx)).Child("kubectl", "resources", "resourceType", resourceType, "labelSelector", labelSelector)

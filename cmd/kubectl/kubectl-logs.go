@@ -204,7 +204,7 @@ func BuildSelectorArgs(cmd *cobra.Command) string {
 	selectors := []string{}
 	for _, selector := range kubectlSelectors {
 		if name, found := selector.HasFlag(cmd); found {
-			log.Debugf("Selector %s found with flag %s", selector.Name, name)
+			log.Debugf("Selector %s found with flag %s, adding selector %s", selector.Name, name, selector.GetLabel())
 			// If the flag has a value, we need to add it as well
 			if cmd.Flags().Lookup(name).Value.String() != "" && cmd.Flags().Lookup(name).Value.Type() != "bool" {
 				selectors = append(selectors, fmt.Sprintf("%s=%s", selector.GetLabel(), cmd.Flags().Lookup(name).Value.String()))
