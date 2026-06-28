@@ -215,7 +215,7 @@ func (entry LogEntry) writeTimestamp(output io.Writer, options *OutputOptions) {
 		timestamp = entry.Time.In(options.Location)
 	}
 
-	if options.Output.Value == "short" {
+	if options.Output == "short" {
 		timestampFormat := "15:04:05.000Z"
 		if options.Location != nil {
 			timestampFormat = "15:04:05.000"
@@ -237,7 +237,7 @@ func (entry LogEntry) writeHeader(output io.Writer, options *OutputOptions) {
 	entry.writeTimestamp(output, options)
 	entry.Level.Write(output, options)
 
-	if options.Output.Value == "short" {
+	if options.Output == "short" {
 		if len(entry.Name) > 0 {
 			entry.writeString(output, options, " ")
 			entry.writeString(output, options, entry.Name)

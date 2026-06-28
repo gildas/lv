@@ -1,0 +1,35 @@
+follow: true  # Follow logs in real-time (files and kubectl)
+timezone:  local  # Display time in local timezone
+output: short # Display Log entries in short format
+
+selectors:
+  - name: connector
+    label: "connector"
+    usage: "The name of the connector to use for logs"
+    charts: ["chart01", "chart02", "chart03", "chart04"]
+  - name: platform
+    label: "platform"
+    usage: "The name of the platform to use for logs"
+    charts: ["chart01", "chart02", "chart03", "chart04"]
+  - name: provider
+    aliases: ["storage"]
+    label: "provider"
+    usage: "The name of the provider to use for logs"
+    charts: ["chart01"]
+  - name: role
+    label: "role"
+    usage: "The name of the role to use for logs"
+    charts: ["chart01", "chart02", "chart03", "chart04"]
+  - name: tier
+    label: "tier"
+    usage: "The name of the tier to use for logs"
+    # The selector will be added to the flags only if the current Helm chart matches one of the specified charts
+    charts: ["chart01", "chart02"]
+  - name: application
+    aliases: ["app"]
+    # Here the code might need to escape the dots in the label
+    #label: "app\\.kubernetes\\.io/name"
+    label: "app.kubernetes.io/name"
+    usage: "The name of the application to use for logs"
+    # The selector will be always be added to the flags
+    charts: ["*"]

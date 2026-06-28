@@ -216,7 +216,7 @@ func ParseLocation(location string) (*time.Location, error) {
 	if len(location) == 0 {
 		return nil, nil // UTC
 	}
-	if strings.ToLower(CmdOptions.Timezone) == "local" {
+	if strings.ToLower(location) == "local" {
 		return time.Local, nil
 	}
 	if offset, ok := TimezoneAbbreviations[strings.ToUpper(location)]; ok {
