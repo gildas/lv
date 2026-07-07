@@ -75,7 +75,8 @@ func init() {
 	RootCmd.PersistentFlags().BoolP("local", "L", false, "Display time field in local time, rather than UTC.")
 	RootCmd.PersistentFlags().StringVar(&CmdOptions.Timezone, "time", "", "Display time field in the given timezone (by default local time).")
 	RootCmd.PersistentFlags().BoolVarP(&CmdOptions.Follow, "follow", "f", false, "Specify if the logs should be streamed (kubernetes or files)")
-	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UsePager, "no-pager", true, "Do not pipe output into a pager. By default, the output is piped throug `less` (or $PAGER if set), if stdout is a TTY")
+	RootCmd.PersistentFlags().Bool("no-pager", true, "Do not pipe output into a pager. By default, the output is piped throug `less` (or $PAGER if set), if stdout is a TTY")
+	RootCmd.PersistentFlags().Bool("pager", true, "Pipe output into a pager. By default, the output is piped throug `less` (or $PAGER if set), if stdout is a TTY")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UseColors, "no-color", false, "Do not colorize output. By default, the output is colorized if stdout is a TTY")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UseColors, "color", true, "Colorize output always, even if the output stream is not a TTY.")
 	RootCmd.PersistentFlags().BoolVar(&CmdOptions.UseKubernetes, "k8s", false, "Use Kubernetes resources instead of files. This flag is automatically set when any of the kubectl logs flags are used.")
@@ -90,6 +91,7 @@ func init() {
 		os.Exit(1)
 	}
 
+	RootCmd.MarkFlagsMutuallyExclusive("no-pager", "pager")
 	_ = RootCmd.RegisterFlagCompletionFunc(CmdOptions.Output.CompletionFunc("output"))
 	_ = RootCmd.RegisterFlagCompletionFunc(CmdOptions.Completion.CompletionFunc("completion"))
 
@@ -134,9 +136,11 @@ func runRootCommand(cmd *cobra.Command, args []string) (err error) {
 	if cmd.Flags().Changed("no-color") {
 		CmdOptions.UseColors = false
 	}
-	CmdOptions.UsePager = isStdoutTTY() && isStdinTTY() && !kubectl.HasLogsFlags(cmd)
+	CmdOptions.UsePager = isStdoutTTY() && isStdinTTY() && viper.GetBool("pager") && !kubectl.HasLogsFlags(cmd)
 	if cmd.Flags().Changed("no-pager") || viper.GetBool("no-pager") {
 		CmdOptions.UsePager = false
+	} else if cmd.Flags().Changed("pager") || viper.GetBool("pager") {
+		CmdOptions.UsePager = true
 	}
 	CmdOptions.OutputOptions.Output = viper.GetString("output")
 

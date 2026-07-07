@@ -60,6 +60,7 @@ func InitializeConfiguration(cmd *cobra.Command) (err error) {
 	viper.SetDefault("color", true)
 	viper.SetDefault("follow", false)
 	viper.SetDefault("output", "long")
+	viper.SetDefault("pager", true)
 	viper.SetDefault("timezone", "local")
 
 	viper.SetEnvPrefix("LV")
