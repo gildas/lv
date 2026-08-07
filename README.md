@@ -25,7 +25,7 @@ sudo apt update
 Then install `bb` with:
 
 ```bash
-sudo apt install bitbucket-cli
+sudo apt install bunyan-logviewer
 ```
 
 If you use [Homebrew](https://brew.sh), you can install `lv` with:
