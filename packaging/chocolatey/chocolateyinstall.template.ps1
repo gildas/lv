@@ -1,13 +1,22 @@
 ﻿$ErrorActionPreference = 'Stop' # stop on all errors
 $toolsDir   = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
+$isArm64    = ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64' -or $env:PROCESSOR_ARCHITEW6432 -eq 'ARM64')
+
+if ($isArm64) {
+  $file     = "$toolDir\bunyan-logviewer-{{VERSION}}-windows-arm64.7z"
+  $checksum = '{{CHECKSUM_ARM64}}'
+} else {
+  $file     = "$toolDir\bunyan-logviewer-{{VERSION}}-windows-amd64.7z"
+  $checksum = '{{CHECKSUM_AMD64}}'
+}
 
 $packageArgs = @{
   packageName   = $env:ChocolateyPackageName
   unzipLocation = $toolsDir
   fileType      = 'exe'
-  file64        = "$toolsDir\bunyan-logviewer-0.4.0-windows-amd64.7z"
+  file64        = $file
   softwareName  = 'lv*'
-  checksum64    = '5fdafd726ab908d80550409033adde4af7baa1bfada741e6178a5c6eb3721c50'
+  checksum64    = $checksum
   checksumType64= 'sha256'
 }
 

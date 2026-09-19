@@ -8,13 +8,13 @@ I, Gildas Cherruel, am the author of this package that lives on https://github.c
 The Package can ve verified by checking the following:
 
 1. Go to:
-  v0.4.0: https://github.com/gildas/lv/releases/download/v0.4.0/bunyan-logviewer-0.4.0-windows-amd64.7z
+  https://github.com/gildas/lv/releases/download/v{{VERSION}}/bunyan-logviewer-{{VERSION}}-windows-amd64.7z
 
   to download the application binary.
 
 2. You can verify the integrity of the downloaded file by checking its SHA256 hash:
 
-  5fdafd726ab908d80550409033adde4af7baa1bfada741e6178a5c6eb3721c50
+  checksum: {{CHECKSUM_AMD64}}
 
   with the PowerShell function `Get-FileHash` or the Chocolatey `checksum.exe` utility.
 
